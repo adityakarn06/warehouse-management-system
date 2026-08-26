@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "realtime:verify": "node scripts/realtime-verify.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

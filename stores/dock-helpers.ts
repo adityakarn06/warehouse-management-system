@@ -26,6 +26,12 @@ export interface LiveAssignmentEntry {
   score: number;
   reasons: string[];
   serverTimestamp: string;
+  /** Present only when this entry came from `DOCK_REASSIGNED` — the door the
+   * truck was moved off of, and why. Absent for a plain `DOCK_ASSIGNED`. */
+  previousAssignmentId?: string;
+  previousDockDoorId?: string;
+  previousDockCode?: string;
+  reason?: string;
 }
 
 export type DocksById = Record<string, LiveDockEntry>;
@@ -148,6 +154,10 @@ export function applyDockAssignment(
           score: payload.score,
           reasons: payload.reasons,
           serverTimestamp: payload.serverTimestamp,
+          previousAssignmentId: isReassignment ? payload.previousAssignmentId : undefined,
+          previousDockDoorId: isReassignment ? payload.previousDockDoorId : undefined,
+          previousDockCode: isReassignment ? payload.previousDockCode : undefined,
+          reason: isReassignment ? payload.reason : undefined,
         },
       };
 

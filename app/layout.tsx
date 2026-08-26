@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { QueryProvider } from "@/providers/query-provider"
+import { RealtimeProvider } from "@/providers/realtime-provider"
 
 const montserrat = Montserrat({subsets:['latin'],variable:'--font-sans'});
 
@@ -31,7 +32,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <QueryProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <RealtimeProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </RealtimeProvider>
         </QueryProvider>
         <Toaster />
       </body>

@@ -109,3 +109,39 @@ export interface DockReassignedPayload extends DockAssignedPayload {
 export type SubscribeAck<T> =
   | { ok: true; room: string; data: T }
   | { ok: false; error: string };
+
+/** `subscribe:shipment` ack `data` — realtime.md's `{ shipmentId, truck }`. */
+export interface ShipmentSnapshot {
+  shipmentId: string;
+  truck: LiveTruckView | null;
+}
+
+/** Server → client — events are emitted by name, never a `{ type, data }` envelope. */
+export interface ServerToClientEvents {
+  TRUCK_POSITION_UPDATED: (payload: TruckPositionPayload) => void;
+  TRUCK_ETA_UPDATED: (payload: TruckEtaPayload) => void;
+  TRUCK_STATUS_CHANGED: (payload: TruckStatusChangedPayload) => void;
+  ALERT_CREATED: (payload: AlertCreatedPayload) => void;
+  DOCK_STATUS_CHANGED: (payload: DockStatusChangedPayload) => void;
+  DOCK_ASSIGNED: (payload: DockAssignedPayload) => void;
+  DOCK_REASSIGNED: (payload: DockReassignedPayload) => void;
+}
+
+/** Client → server — every subscribe/unsubscribe answers through an ack. */
+export interface ClientToServerEvents {
+  "subscribe:operations": (ack: (res: SubscribeAck<LiveTruckView[]>) => void) => void;
+  "subscribe:truck": (
+    args: { truckId: string },
+    ack: (res: SubscribeAck<LiveTruckView>) => void,
+  ) => void;
+  "subscribe:shipment": (
+    args: { shipmentId: string },
+    ack: (res: SubscribeAck<ShipmentSnapshot>) => void,
+  ) => void;
+  "unsubscribe:operations": (ack: (res: SubscribeAck<null>) => void) => void;
+  "unsubscribe:truck": (args: { truckId: string }, ack: (res: SubscribeAck<null>) => void) => void;
+  "unsubscribe:shipment": (
+    args: { shipmentId: string },
+    ack: (res: SubscribeAck<null>) => void,
+  ) => void;
+}
