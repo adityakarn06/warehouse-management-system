@@ -40,6 +40,11 @@ function createSocket(): AppSocket {
   instance.on("disconnect", () => {
     useRealtimeStore.getState().setConnectionStatus("DISCONNECTED");
     useRealtimeStore.getState().setSocketId(null);
+    // Room membership is per-socket and the server drops it on every
+    // disconnect (docs/realtime.md) — `resubscribeAll` rebuilds the rooms
+    // themselves on reconnect, but the store's view must reflect "joined
+    // nothing" in the meantime rather than showing stale rooms.
+    useRealtimeStore.getState().clearSubscribedRooms();
   });
 
   instance.on("connect_error", (error) => {

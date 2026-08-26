@@ -44,8 +44,8 @@ export interface DockState {
 
 /** Dock events carry no `sequenceNumber` — order them by `serverTimestamp`
  * instead. A strictly older timestamp than what's stored is dropped. */
-function isOlderThanStored(existing: { updatedAt: string } | undefined, serverTimestamp: string): boolean {
-  return existing !== undefined && serverTimestamp < existing.updatedAt;
+function isOlderThanStored(storedTimestamp: string | undefined, serverTimestamp: string): boolean {
+  return storedTimestamp !== undefined && serverTimestamp < storedTimestamp;
 }
 
 export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
@@ -54,7 +54,7 @@ export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
 
 export function applyDockStatus(state: DockState, payload: DockStatusChangedPayload): DockState {
   const existing = state.docksById[payload.dockDoorId];
-  if (isOlderThanStored(existing, payload.serverTimestamp)) return state;
+  if (isOlderThanStored(existing?.updatedAt, payload.serverTimestamp)) return state;
 
   // A door going back into service (AVAILABLE) is no longer occupied or
   // assigned; any other resulting status leaves the current occupant as-is.
@@ -100,7 +100,7 @@ export function applyDockAssignment(
   const existing = state.docksById[payload.dockDoorId];
 
   let docksById = state.docksById;
-  if (!isOlderThanStored(existing, payload.serverTimestamp)) {
+  if (!isOlderThanStored(existing?.updatedAt, payload.serverTimestamp)) {
     // Only a door already known gets updated in place — one never seen
     // before is left for the next DOCK_STATUS_CHANGED or snapshot to
     // populate its real status, rather than guessing one here.
@@ -121,7 +121,7 @@ export function applyDockAssignment(
       if (
         previousDoor &&
         previousDoor.occupyingTruckId === payload.truckId &&
-        !isOlderThanStored(previousDoor, payload.serverTimestamp)
+        !isOlderThanStored(previousDoor.updatedAt, payload.serverTimestamp)
       ) {
         docksById = {
           ...docksById,
@@ -137,8 +137,7 @@ export function applyDockAssignment(
   }
 
   const existingAssignment = state.assignmentsByTruckId[payload.truckId];
-  const assignmentIsStale =
-    existingAssignment !== undefined && payload.serverTimestamp < existingAssignment.serverTimestamp;
+  const assignmentIsStale = isOlderThanStored(existingAssignment?.serverTimestamp, payload.serverTimestamp);
 
   const assignmentsByTruckId: AssignmentsByTruckId = assignmentIsStale
     ? state.assignmentsByTruckId

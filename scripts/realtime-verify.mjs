@@ -199,10 +199,6 @@ async function main() {
   }
 
   // ---- Reconnect + re-baseline -------------------------------------------
-  const beforeSequences = new Map(
-    [...positionsByTruck.entries()].map(([id, list]) => [id, list[list.length - 1]?.sequenceNumber ?? 0]),
-  );
-
   let resubscribed = false;
   const reconnectPromise = new Promise((resolve) => opsClient.once("connect", resolve));
   console.log("Forcing transport close to simulate a drop ...");
@@ -214,25 +210,58 @@ async function main() {
   record("reconnect: client re-subscribes and gets a fresh snapshot", resubscribed);
 
   if (resubscribed) {
-    const rebaselined = postReconnectAck.data.every((truck) => {
-      const before = beforeSequences.get(truck.truckId);
-      return before === undefined || truck.sequenceNumber >= 0; // snapshot re-baselines regardless of prior value
-    });
-    record("reconnect: snapshot re-baselines sequenceNumber per truck", rebaselined);
+    // A meaningful re-baseline check needs a live signal, not just the ack
+    // shape: record the snapshot's per-truck sequenceNumber as the new floor,
+    // then confirm every subsequent live position update for that truck is
+    // >= that floor — i.e. the client is expected to accept ticks measured
+    // from the fresh baseline, not from whatever it saw pre-reconnect.
+    const newBaseline = new Map(postReconnectAck.data.map((t) => [t.truckId, t.sequenceNumber]));
+    const structurallyValid = postReconnectAck.data.every((t) => Number.isFinite(t.sequenceNumber));
+
+    const violatesBaseline = [];
+    const postReconnectHandler = (p) => {
+      const floor = newBaseline.get(p.truckId);
+      if (floor !== undefined && p.sequenceNumber < floor) violatesBaseline.push(p.truckId);
+    };
+    opsClient.on("TRUCK_POSITION_UPDATED", postReconnectHandler);
+    await new Promise((r) => setTimeout(r, 5000));
+    opsClient.off("TRUCK_POSITION_UPDATED", postReconnectHandler);
+
+    record(
+      "reconnect: snapshot carries a valid sequenceNumber per truck",
+      structurallyValid,
+    );
+    record(
+      "reconnect: live updates after reconnect never fall below the fresh snapshot baseline",
+      violatesBaseline.length === 0,
+      violatesBaseline.length ? `violated for ${violatesBaseline.join(", ")}` : undefined,
+    );
   }
 
   // ---- No duplicate handlers ----------------------------------------------
+  // NOTE: this checks only this script's own `opsClient.on(...)` calls, not
+  // the app's singleton (`lib/socket/client.ts` registers
+  // `registerEventHandlers` exactly once at socket creation, and reconnects
+  // reuse that same Socket instance — see that file's comments). Confirming
+  // the app itself never double-registers requires either a unit test against
+  // the real module or a manual check (reconnect in the running app and
+  // diff `getSocket().listeners(...)` before/after).
   record(
-    "no duplicate TRUCK_POSITION_UPDATED listeners after reconnect",
+    "this script's own TRUCK_POSITION_UPDATED listener is not duplicated by socket.io-client across a reconnect",
     opsClient.listeners("TRUCK_POSITION_UPDATED").length === 1,
     `count=${opsClient.listeners("TRUCK_POSITION_UPDATED").length}`,
   );
 
-  // Reproduce lib/socket/subscriptions.ts's ref-counting algorithm against
-  // the live socket: two "consumers" subscribing to the same truck must
-  // produce exactly one `subscribe:truck` frame, and releasing both must
-  // produce exactly one `unsubscribe:truck` frame — matching what two
-  // components mounting `useTruckSubscription(sameId)` would do.
+  // NOTE: this re-implements lib/socket/subscriptions.ts's ref-counting
+  // shape against the live socket rather than importing that module
+  // directly — this script is plain Node ESM and the module resolves `@/*`
+  // path aliases, which only a bundler/TS loader understands. It proves the
+  // *protocol* two same-room consumers must produce (one subscribe frame,
+  // one unsubscribe frame on last release) but a regression in the actual
+  // acquire/release/pendingRelease logic in subscriptions.ts would NOT be
+  // caught here — that needs either a unit test with a mocked socket or
+  // manual verification (mount two components watching the same truck and
+  // check devtools network frames).
   let subscribeFrames = 0;
   let unsubscribeFrames = 0;
   const originalEmit = truckClient.emit.bind(truckClient);

@@ -27,6 +27,7 @@ interface RealtimeActions {
   setError: (message: string | null) => void;
   addSubscribedRoom: (room: string) => void;
   removeSubscribedRoom: (room: string) => void;
+  clearSubscribedRooms: () => void;
   markEventReceived: () => void;
   reset: () => void;
 }
@@ -59,6 +60,7 @@ export const useRealtimeStore = create<RealtimeStore>()((set) => ({
     ),
   removeSubscribedRoom: (room) =>
     set((state) => ({ subscribedRooms: state.subscribedRooms.filter((r) => r !== room) })),
+  clearSubscribedRooms: () => set({ subscribedRooms: [] }),
   markEventReceived: () => set({ lastEventAt: Date.now() }),
   reset: () => set(initialState),
 }));
