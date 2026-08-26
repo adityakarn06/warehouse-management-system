@@ -1,20 +1,17 @@
 import { create } from "zustand";
 
-import type { DockStatus } from "@/types";
 import type { DockAssignedPayload, DockReassignedPayload, DockStatusChangedPayload } from "@/types";
 
-export interface LiveDockEntry {
-  dockId: string;
-  code: string;
-  status: DockStatus;
-  occupyingTruckId: string | null;
-  activeAssignmentId: string | null;
-  updatedAt: string;
-}
+import {
+  applyDockAssignment,
+  applyDockStatus,
+  replaceDockSnapshot,
+  type DockState,
+  type LiveAssignmentEntry,
+  type LiveDockEntry,
+} from "./dock-helpers";
 
-interface DockState {
-  docksById: Record<string, LiveDockEntry>;
-}
+export type { LiveAssignmentEntry, LiveDockEntry };
 
 interface DockActions {
   hydrateFromSnapshot: (docks: LiveDockEntry[]) => void;
@@ -28,63 +25,17 @@ type DockStore = DockState & DockActions;
 
 export const useDockStore = create<DockStore>()((set) => ({
   docksById: {},
+  assignmentsByTruckId: {},
 
-  hydrateFromSnapshot: (docks) =>
-    set(() => ({ docksById: Object.fromEntries(docks.map((d) => [d.dockId, d])) })),
+  hydrateFromSnapshot: (docks) => set(() => ({ docksById: replaceDockSnapshot(docks) })),
 
-  applyStatusChange: (payload) =>
-    set((state) => {
-      const existing = state.docksById[payload.dockDoorId];
-      return {
-        docksById: {
-          ...state.docksById,
-          [payload.dockDoorId]: {
-            dockId: payload.dockDoorId,
-            code: payload.code,
-            status: payload.status as DockStatus,
-            occupyingTruckId: existing?.occupyingTruckId ?? null,
-            activeAssignmentId: existing?.activeAssignmentId ?? null,
-            updatedAt: payload.serverTimestamp,
-          },
-        },
-      };
-    }),
+  applyStatusChange: (payload) => set((state) => applyDockStatus(state, payload)),
 
   applyAssigned: (payload) =>
-    set((state) => {
-      const existing = state.docksById[payload.dockDoorId];
-      return {
-        docksById: {
-          ...state.docksById,
-          [payload.dockDoorId]: {
-            dockId: payload.dockDoorId,
-            code: payload.dockCode,
-            status: existing?.status ?? "RESERVED",
-            occupyingTruckId: payload.truckId,
-            activeAssignmentId: payload.assignmentId,
-            updatedAt: payload.serverTimestamp,
-          },
-        },
-      };
-    }),
+    set((state) => applyDockAssignment(state, payload)),
 
   applyReassigned: (payload) =>
-    set((state) => {
-      const existing = state.docksById[payload.dockDoorId];
-      return {
-        docksById: {
-          ...state.docksById,
-          [payload.dockDoorId]: {
-            dockId: payload.dockDoorId,
-            code: payload.dockCode,
-            status: existing?.status ?? "RESERVED",
-            occupyingTruckId: payload.truckId,
-            activeAssignmentId: payload.assignmentId,
-            updatedAt: payload.serverTimestamp,
-          },
-        },
-      };
-    }),
+    set((state) => applyDockAssignment(state, payload)),
 
-  clear: () => set({ docksById: {} }),
+  clear: () => set({ docksById: {}, assignmentsByTruckId: {} }),
 }));

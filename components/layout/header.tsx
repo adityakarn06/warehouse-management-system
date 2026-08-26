@@ -3,28 +3,29 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useRealtimeStore } from "@/stores";
+import { useConnectionStatus } from "@/stores";
+import type { ConnectionStatus } from "@/stores";
 
-const statusLabel: Record<string, string> = {
-  idle: "Not connected",
-  connecting: "Connecting…",
-  connected: "Live",
-  reconnecting: "Reconnecting…",
-  disconnected: "Disconnected",
-  error: "Connection error",
+const statusLabel: Record<ConnectionStatus, string> = {
+  IDLE: "Not connected",
+  CONNECTING: "Connecting…",
+  CONNECTED: "Live",
+  RECONNECTING: "Reconnecting…",
+  DISCONNECTED: "Disconnected",
+  ERROR: "Connection error",
 };
 
-const statusDotClass: Record<string, string> = {
-  idle: "bg-muted-foreground/40",
-  connecting: "bg-info animate-pulse",
-  connected: "bg-success",
-  reconnecting: "bg-warning animate-pulse",
-  disconnected: "bg-muted-foreground/40",
-  error: "bg-destructive",
+const statusDotClass: Record<ConnectionStatus, string> = {
+  IDLE: "bg-muted-foreground/40",
+  CONNECTING: "bg-info animate-pulse",
+  CONNECTED: "bg-success",
+  RECONNECTING: "bg-warning animate-pulse",
+  DISCONNECTED: "bg-muted-foreground/40",
+  ERROR: "bg-destructive",
 };
 
 export function Header() {
-  const status = useRealtimeStore((state) => state.status);
+  const status = useConnectionStatus();
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border px-4">

@@ -1,52 +1,64 @@
 import { create } from "zustand";
 
 export type ConnectionStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "disconnected"
-  | "error";
+  | "IDLE"
+  | "CONNECTING"
+  | "CONNECTED"
+  | "RECONNECTING"
+  | "DISCONNECTED"
+  | "ERROR";
 
 interface RealtimeState {
-  status: ConnectionStatus;
+  connectionStatus: ConnectionStatus;
+  socketId: string | null;
   lastConnectedAt: string | null;
   lastError: string | null;
-  subscribedRooms: Set<string>;
+  /** Rooms this socket currently holds. A plain array, not a `Set` — so
+   * selectors can compare it with `useShallow` instead of by reference. */
+  subscribedRooms: readonly string[];
+  /** Epoch ms of the last event dispatched into any store, for a "feed looks
+   * stale" indicator. Not a domain value — purely a client-side liveness signal. */
+  lastEventAt: number | null;
 }
 
 interface RealtimeActions {
-  setStatus: (status: ConnectionStatus) => void;
+  setConnectionStatus: (status: ConnectionStatus) => void;
+  setSocketId: (socketId: string | null) => void;
   setError: (message: string | null) => void;
   addSubscribedRoom: (room: string) => void;
   removeSubscribedRoom: (room: string) => void;
+  markEventReceived: () => void;
   reset: () => void;
 }
 
 type RealtimeStore = RealtimeState & RealtimeActions;
 
 const initialState: RealtimeState = {
-  status: "idle",
+  connectionStatus: "IDLE",
+  socketId: null,
   lastConnectedAt: null,
   lastError: null,
-  subscribedRooms: new Set(),
+  subscribedRooms: [],
+  lastEventAt: null,
 };
 
 export const useRealtimeStore = create<RealtimeStore>()((set) => ({
   ...initialState,
-  setStatus: (status) =>
+  setConnectionStatus: (status) =>
     set((state) => ({
-      status,
-      lastConnectedAt: status === "connected" ? new Date().toISOString() : state.lastConnectedAt,
+      connectionStatus: status,
+      lastConnectedAt: status === "CONNECTED" ? new Date().toISOString() : state.lastConnectedAt,
     })),
+  setSocketId: (socketId) => set({ socketId }),
   setError: (message) => set({ lastError: message }),
   addSubscribedRoom: (room) =>
-    set((state) => ({ subscribedRooms: new Set(state.subscribedRooms).add(room) })),
+    set((state) =>
+      state.subscribedRooms.includes(room)
+        ? state
+        : { subscribedRooms: [...state.subscribedRooms, room] },
+    ),
   removeSubscribedRoom: (room) =>
-    set((state) => {
-      const next = new Set(state.subscribedRooms);
-      next.delete(room);
-      return { subscribedRooms: next };
-    }),
-  reset: () => set({ ...initialState, subscribedRooms: new Set() }),
+    set((state) => ({ subscribedRooms: state.subscribedRooms.filter((r) => r !== room) })),
+  markEventReceived: () => set({ lastEventAt: Date.now() }),
+  reset: () => set(initialState),
 }));
