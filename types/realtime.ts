@@ -3,7 +3,7 @@
  * Validating every tick with a full schema parse is a perf decision left for
  * the socket-integration phase — scaffolding only needs the compile-time shape.
  */
-import type { ActiveDelay, TruckStatus } from "@/schemas/truck.schema";
+import type { ActiveDelay, TruckStatus } from "@/schemas/common.schema";
 
 export interface LiveTruckView {
   truckId: string;

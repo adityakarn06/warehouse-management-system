@@ -1,6 +1,8 @@
 export type {
-  Shipment,
-  ShipmentStatus,
-  ShipmentPriority,
-  LoadType,
+  ShipmentListItem,
+  ShipmentDetail,
+  ShipmentSummary,
+  Appointment,
+  AppointmentWindow,
 } from "@/schemas/shipment.schema";
+export type { ShipmentStatus, ShipmentPriority, LoadType } from "@/schemas/common.schema";
