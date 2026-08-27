@@ -2,6 +2,7 @@
 
 import { XIcon } from "lucide-react";
 
+import { TruckSimulationControls } from "@/components/trucks/truck-simulation-controls";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useLiveTruckFields } from "@/features/yard";
@@ -91,6 +92,8 @@ export function SelectedTruckPanel({ truck }: { truck: YardTruck }) {
           ) : null}
         </div>
       ) : null}
+
+      <TruckSimulationControls truckId={truck.id} reference={truck.reference} live={live} />
     </div>
   );
 }

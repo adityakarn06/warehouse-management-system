@@ -65,3 +65,8 @@ export const useAssignmentForTruck = (truckId: string | null) =>
 
 export const useAlerts = () => useAlertStore((s) => s.alerts);
 export const useUnreadAlertCount = () => useAlertStore((s) => s.unreadCount);
+
+/** The newest alert naming this truck. The feed is already newest-first and
+ * `.find` hands back an existing reference, so this needs no `useShallow`. */
+export const useLatestAlertForTruck = (truckId: string | null) =>
+  useAlertStore((s) => (truckId ? s.alerts.find((alert) => alert.truckId === truckId) : undefined));

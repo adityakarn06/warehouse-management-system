@@ -1,9 +1,11 @@
 import { create } from "zustand";
 
+import type { DelayResult } from "@/schemas/simulation.schema";
 import type { LiveTruckView, TruckEtaPayload, TruckPositionPayload, TruckStatusChangedPayload } from "@/types";
 
 import {
   acceptTruckPosition,
+  applyDelayResult,
   removeTruckEntry,
   replaceAllTruckSnapshots,
   replaceTruckSnapshot,
@@ -28,6 +30,9 @@ interface TruckActions {
   applyPositionUpdate: (payload: TruckPositionPayload) => void;
   applyEtaUpdate: (payload: TruckEtaPayload) => void;
   applyStatusChange: (payload: TruckStatusChangedPayload) => void;
+  /** Authoritative truck state returned by a delay / clear-delay command —
+   * applied directly so the command needs no follow-up GET. */
+  applyCommandResult: (truck: DelayResult["truck"]) => void;
   removeTruck: (truckId: string) => void;
   clear: () => void;
 }
@@ -51,6 +56,9 @@ export const useTruckStore = create<TruckStore>()((set) => ({
 
   applyStatusChange: (payload) =>
     set((state) => ({ trucksById: updateTruckStatus(state.trucksById, payload, Date.now()) })),
+
+  applyCommandResult: (truck) =>
+    set((state) => ({ trucksById: applyDelayResult(state.trucksById, truck, Date.now()) })),
 
   removeTruck: (truckId) => set((state) => ({ trucksById: removeTruckEntry(state.trucksById, truckId) })),
 

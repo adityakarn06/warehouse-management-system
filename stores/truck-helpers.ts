@@ -1,3 +1,4 @@
+import type { DelayResult } from "@/schemas/simulation.schema";
 import type {
   ActiveDelay,
   LiveTruckView,
@@ -26,6 +27,9 @@ export interface LiveTruckEntry {
   targetLongitude: number;
   progress: number;
   speedKmph: number;
+  /** Server-sent base (undelayed) speed. `null` for a truck first seen through a
+   * live position tick, whose payload does not carry it. Never derived. */
+  baseSpeedKmph: number | null;
   eta: string | null;
   serverTimestamp: string;
   receivedAt: number;
@@ -66,6 +70,7 @@ export function truckEntryFromSnapshot(view: LiveTruckView, now: number): LiveTr
     targetLongitude: view.longitude,
     progress: view.progress,
     speedKmph: view.speedKmph,
+    baseSpeedKmph: view.baseSpeedKmph,
     eta: view.eta,
     serverTimestamp: view.lastUpdatedAt,
     receivedAt: now,
@@ -123,6 +128,7 @@ export function acceptTruckPosition(
       targetLongitude: payload.targetLongitude,
       progress: payload.progress,
       speedKmph: payload.speedKmph,
+      baseSpeedKmph: existing?.baseSpeedKmph ?? null,
       eta: payload.eta,
       serverTimestamp: payload.serverTimestamp,
       receivedAt: now,
@@ -181,6 +187,40 @@ export function updateTruckStatus(
       serverTimestamp: payload.serverTimestamp,
       receivedAt: now,
       sequenceNumber: payload.sequenceNumber,
+    },
+  };
+}
+
+/**
+ * The authoritative truck state returned by `POST .../delay` and
+ * `.../clear-delay`. The backend owns speed, ETA, status and the scenario, so
+ * this is applied verbatim and no follow-up GET is issued (docs/api.md).
+ *
+ * Same rules as the two events above: no position on the payload, so an
+ * unknown truck is dropped rather than fabricated, and a response that lost
+ * the race against a tick which already advanced the high-water mark is stale.
+ * `serverTimestamp` is left alone — the command response carries none.
+ */
+export function applyDelayResult(
+  trucksById: TrucksById,
+  truck: DelayResult["truck"],
+  now: number,
+): TrucksById {
+  const existing = trucksById[truck.truckId];
+  if (!existing || isStaleSequence(existing, truck.sequenceNumber)) return trucksById;
+
+  return {
+    ...trucksById,
+    [truck.truckId]: {
+      ...existing,
+      status: truck.status,
+      activeDelay: truck.activeDelay,
+      progress: truck.progress,
+      speedKmph: truck.speedKmph,
+      baseSpeedKmph: truck.baseSpeedKmph,
+      eta: truck.eta ?? null,
+      receivedAt: now,
+      sequenceNumber: truck.sequenceNumber,
     },
   };
 }

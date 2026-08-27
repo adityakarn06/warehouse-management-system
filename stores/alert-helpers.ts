@@ -59,7 +59,16 @@ export function seedAlerts(state: AlertState, alerts: Alert[], now: number): Ale
   return { alerts: merged, unreadCount: merged.filter((alert) => !alert.isRead).length };
 }
 
+/**
+ * Both the socket's `ALERT_CREATED` and a delay command's response `alert` land
+ * here, and a single activation produces both — so the feed dedupes on the
+ * server's `alertId` (normalised to `id`) and keeps whichever arrived first.
+ * The same guard absorbs a same-scenario double-press, which the backend
+ * answers with the *existing* alert rather than a second one (docs/api.md).
+ */
 export function prependAlert(state: AlertState, payload: AlertCreatedPayload, now: number): AlertState {
+  if (state.alerts.some((alert) => alert.id === payload.alertId)) return state;
+
   return {
     alerts: [alertFromPayload(payload, now), ...state.alerts].slice(0, MAX_ALERTS),
     unreadCount: state.unreadCount + 1,
