@@ -12,7 +12,7 @@ export interface FleetFilters extends QueryParams {
   offset?: number;
 }
 
-/** See docs/fleet.md — a proposed backend endpoint, not yet implemented. */
+/** See docs/api.md § Fleet — backed by `GET /api/v1/fleet`. */
 export function getFleet(filters: FleetFilters = {}) {
   return apiGetList(API_ROUTES.fleet, fleetTruckSchema, { query: filters });
 }

@@ -36,6 +36,7 @@ export function FleetToolbar({ search, onSearchChange, status, onStatusChange }:
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search for truck ID"
+          aria-label="Search for truck ID"
           className="w-48 pl-7"
         />
       </div>
