@@ -57,8 +57,14 @@ const shipmentStatusTone: Record<ShipmentStatus, SemanticTone> = {
   DELIVERED: "success",
 };
 
+/**
+ * Green = take it, blue = spoken for, amber = working, red = down.
+ * `AVAILABLE` and `RESERVED` both read as `info` would make a free door
+ * indistinguishable from a committed one on the 8-up board, which is the one
+ * thing that board exists to answer.
+ */
 const dockStatusTone: Record<DockStatus, SemanticTone> = {
-  AVAILABLE: "info",
+  AVAILABLE: "success",
   RESERVED: "info",
   OCCUPIED: "warning",
   UNAVAILABLE: "critical",
@@ -76,6 +82,17 @@ const alertSeverityTone: Record<AlertSeverity, SemanticTone> = {
   INFO: "info",
   WARNING: "warning",
   CRITICAL: "critical",
+};
+
+/**
+ * The row's own left edge, so severity is legible before the badge is read.
+ * Exported because the dashboard feed and the /alerts page render the same
+ * concept and previously each kept their own copy of this map.
+ */
+export const alertSeverityBorder: Record<AlertSeverity, string> = {
+  CRITICAL: "border-l-destructive",
+  WARNING: "border-l-warning",
+  INFO: "border-l-info",
 };
 
 type StatusBadgeProps = {

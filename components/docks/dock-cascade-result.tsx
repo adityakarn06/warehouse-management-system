@@ -59,7 +59,7 @@ export function DockCascadeResult({ result }: { result: DockStatusUpdateResult }
 
   if (!result.changed) {
     return (
-      <p className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-[0.65rem] text-muted-foreground">
+      <p className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-2xs text-muted-foreground">
         <InfoIcon className="size-3 shrink-0" />
         Already {result.dock.status.toLowerCase()} — nothing changed.
       </p>
@@ -67,7 +67,7 @@ export function DockCascadeResult({ result }: { result: DockStatusUpdateResult }
   }
 
   return (
-    <div className="flex flex-col gap-2 text-[0.65rem]">
+    <div className="flex flex-col gap-2 text-2xs">
       <p className="text-muted-foreground">
         <span className="font-medium text-foreground">{result.dock.code}</span> is now{" "}
         {result.dock.status}

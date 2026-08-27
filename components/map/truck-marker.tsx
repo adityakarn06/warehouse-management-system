@@ -121,8 +121,9 @@ export function TruckMarker({ truck }: { truck: MapTruck }) {
     >
       <span
         className={cn(
-          "relative grid place-items-center rounded-md bg-background/80 p-0.5 shadow-sm transition",
-          isSelected && "bg-background",
+          "relative grid place-items-center rounded-md border border-border bg-background p-0.5 shadow-sm transition-[box-shadow,border-color]",
+          // Selection reads as the app-wide affordance: primary border + ring.
+          isSelected && "border-primary ring-1 ring-primary/20",
         )}
       >
         <Image
@@ -135,13 +136,13 @@ export function TruckMarker({ truck }: { truck: MapTruck }) {
         />
         <span
           className={cn(
-            "absolute -right-0.5 -top-0.5 size-2 rounded-full ring-1 ring-background",
+            "absolute -right-1 -top-1 size-2.5 rounded-full ring-2 ring-background",
             toneDotClass[tone],
           )}
         />
       </span>
 
-      <span className="rounded bg-background/90 px-1 py-px text-[0.6rem] font-medium leading-tight tabular-nums shadow-sm">
+      <span className="rounded-sm border border-border bg-background px-1 py-px text-2xs font-medium leading-tight tabular-nums shadow-sm">
         {formatCountdown(live.eta, now, { compact: true })}
       </span>
     </button>,

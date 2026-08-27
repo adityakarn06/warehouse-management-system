@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { PlugZapIcon, RadarIcon, TruckIcon, type LucideIcon } from "lucide-react";
 
@@ -39,7 +39,16 @@ export function TrackingMap({
 }) {
   const connectionStatus = useConnectionStatus();
 
-  if (live) return <TrackingMapCanvas live={live} />;
+  // Latched on the truck's *identity*, so the canvas mounts once and stays
+  // mounted. Rendering `live` directly meant a truck dropping out of the store
+  // — a reconnect snapshot that omits it, say — unmounted the whole subtree and
+  // destroyed the Mapbox instance, only to build a fresh one when it returned.
+  // The map does not need `live` after the first frame anyway: position comes
+  // from the interpolator's rAF loop, fed from the truck store.
+  const [seed, setSeed] = useState<LiveTruckEntry | null>(null);
+  if (live && live.truckId !== seed?.truckId) setSeed(live);
+
+  if (seed) return <TrackingMapCanvas live={seed} />;
 
   const waiting = describeWait(connectionStatus, resolution);
 

@@ -3,6 +3,7 @@
 import { ClockIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldLabel } from "@/components/ui/field-label";
 import { useNow } from "@/hooks/use-now";
 import { formatCountdown, formatDateTime } from "@/lib/format";
 
@@ -19,11 +20,8 @@ export function TrackingEtaCard({ eta, isDelayed }: { eta: string | null; isDela
   return (
     <Card>
       <CardContent className="flex flex-col gap-1">
-        <p className="flex items-center gap-1.5 text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-          <ClockIcon className="size-3" />
-          Estimated arrival
-        </p>
-        <p className="text-2xl font-semibold tabular-nums leading-tight">{formatDateTime(eta)}</p>
+        <FieldLabel icon={ClockIcon}>Estimated arrival</FieldLabel>
+        <p className="text-lg font-semibold leading-tight tabular-nums">{formatDateTime(eta)}</p>
         <p className="text-xs text-muted-foreground tabular-nums">
           {formatCountdown(eta, now)}
           {isDelayed ? " · revised for the active delay" : null}

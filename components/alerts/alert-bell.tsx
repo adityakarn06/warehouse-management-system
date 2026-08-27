@@ -42,7 +42,7 @@ export function AlertBell() {
             {unreadCount > 0 && severity ? (
               <span
                 className={cn(
-                  "absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[0.55rem] font-semibold tabular-nums",
+                  "absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-2xs font-semibold tabular-nums",
                   severityDot[severity],
                 )}
               >

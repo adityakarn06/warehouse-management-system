@@ -3,6 +3,7 @@
 import { CalendarClockIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldLabel } from "@/components/ui/field-label";
 import { formatDateTime, formatTime } from "@/lib/format";
 import type { TrackingResult } from "@/types";
 
@@ -15,11 +16,8 @@ export function TrackingAppointmentCard({
   return (
     <Card>
       <CardContent className="flex flex-col gap-1">
-        <p className="flex items-center gap-1.5 text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-          <CalendarClockIcon className="size-3" />
-          Appointment window
-        </p>
-        <p className="text-sm font-medium tabular-nums">
+        <FieldLabel icon={CalendarClockIcon}>Appointment window</FieldLabel>
+        <p className="text-lg font-semibold leading-tight tabular-nums">
           {formatDateTime(appointmentWindow.start)} – {formatTime(appointmentWindow.end)}
         </p>
         <p className="text-xs text-muted-foreground tabular-nums">

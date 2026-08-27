@@ -3,6 +3,7 @@
 import { ArrowRightIcon, DoorOpenIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldLabel } from "@/components/ui/field-label";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime, formatTime } from "@/lib/format";
 import type { LiveAssignmentEntry } from "@/stores";
@@ -43,10 +44,7 @@ export function TrackingDockCard({
   return (
     <Card>
       <CardContent className="flex flex-col gap-2">
-        <p className="flex items-center gap-1.5 text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-          <DoorOpenIcon className="size-3" />
-          Assigned dock
-        </p>
+        <FieldLabel icon={DoorOpenIcon}>Assigned dock</FieldLabel>
 
         <div className="flex flex-wrap items-center gap-2">
           {movedFrom ? (

@@ -45,11 +45,28 @@ import type { SimulationLifecycle } from "@/types";
  * field of the `/simulation/status` response rendered as sent — the running
  * flag is never inferred from how fresh the truck rows look.
  */
+/**
+ * Owns the once-a-second clock so `SimulationControl` itself does not.
+ *
+ * `useNow()` on the parent re-rendered the shell header 1×/s on *every* route,
+ * popover closed or not, for a relative timestamp only visible when it is open.
+ * The popover unmounts its content when closed, so scoping the subscription
+ * here means no timer runs at all until the operator opens it.
+ */
+function LastTickAgo({ at }: { at: string }) {
+  const now = useNow();
+
+  return (
+    <span className="text-2xs tabular-nums text-muted-foreground">
+      {formatSecondsAgo(at, now)}
+    </span>
+  );
+}
+
 export function SimulationControl() {
   const [open, setOpen] = useState(false);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const now = useNow();
 
   const status = useSimulationStatus(open);
   const lifecycle = status.data;
@@ -93,7 +110,7 @@ export function SimulationControl() {
 
         <PopoverContent className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
+            <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
               Simulation loop
             </span>
             {status.isFetching ? (
@@ -103,33 +120,29 @@ export function SimulationControl() {
 
           {status.isError ? (
             <div className="flex items-center justify-between gap-2 rounded-sm bg-destructive/10 px-2 py-1.5">
-              <span className="text-[0.65rem] text-destructive">Loop status unavailable</span>
+              <span className="text-2xs text-destructive">Loop status unavailable</span>
               <Button size="xs" variant="outline" onClick={() => status.refetch()}>
                 Retry
               </Button>
             </div>
           ) : (
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
-              <dt className="text-[0.65rem] text-muted-foreground">State</dt>
+              <dt className="text-2xs text-muted-foreground">State</dt>
               <dd className="flex items-center gap-1.5 font-medium">
                 <span className={cn("size-1.5 rounded-full", statusDotClass(lifecycle))} />
                 {lifecycle ? (lifecycle.running ? "Running" : "Stopped") : "—"}
               </dd>
 
-              <dt className="text-[0.65rem] text-muted-foreground">Tick interval</dt>
+              <dt className="text-2xs text-muted-foreground">Tick interval</dt>
               <dd className="tabular-nums">{lifecycle ? `${lifecycle.tickMs} ms` : "—"}</dd>
 
-              <dt className="text-[0.65rem] text-muted-foreground">Trucks</dt>
+              <dt className="text-2xs text-muted-foreground">Trucks</dt>
               <dd className="tabular-nums">{lifecycle ? lifecycle.truckCount : "—"}</dd>
 
-              <dt className="text-[0.65rem] text-muted-foreground">Last tick</dt>
+              <dt className="text-2xs text-muted-foreground">Last tick</dt>
               <dd className="flex flex-col gap-0.5">
                 <span className="tabular-nums">{formatDateTime(lifecycle?.lastTickAt)}</span>
-                {lifecycle?.lastTickAt ? (
-                  <span className="text-[0.6rem] tabular-nums text-muted-foreground">
-                    {formatSecondsAgo(lifecycle.lastTickAt, now)}
-                  </span>
-                ) : null}
+                {lifecycle?.lastTickAt ? <LastTickAgo at={lifecycle.lastTickAt} /> : null}
               </dd>
             </dl>
           )}
@@ -138,19 +151,19 @@ export function SimulationControl() {
             <div className="flex items-start gap-1.5 rounded-sm bg-destructive/10 px-2 py-1.5">
               <TriangleAlertIcon className="mt-px size-3 shrink-0 text-destructive" />
               <div className="flex flex-col gap-0.5">
-                <span className="text-[0.6rem] font-medium tracking-wide text-destructive uppercase">
+                <span className="text-2xs font-medium tracking-wide text-destructive uppercase">
                   Last tick error
                 </span>
                 {/* "Is it broken now", not "has it ever been broken" — the
                     backend clears this on the first clean tick after the
                     failure (docs/api.md §Simulation). */}
-                <span className="text-[0.65rem] text-destructive">{lifecycle.lastTickError}</span>
+                <span className="text-2xs text-destructive">{lifecycle.lastTickError}</span>
               </div>
             </div>
           ) : null}
 
           {errorMessage ? (
-            <p className="rounded-sm bg-destructive/10 px-2 py-1 text-[0.65rem] text-destructive">
+            <p className="rounded-sm bg-destructive/10 px-2 py-1 text-2xs text-destructive">
               {errorMessage}
             </p>
           ) : null}

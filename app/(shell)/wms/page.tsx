@@ -95,7 +95,7 @@ export default function WmsPage() {
     >
       {errorMessage ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
-          <p className="text-[0.65rem] text-destructive">{errorMessage}</p>
+          <p className="text-2xs text-destructive">{errorMessage}</p>
         </div>
       ) : null}
 

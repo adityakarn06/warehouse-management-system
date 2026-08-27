@@ -3,6 +3,7 @@
 import { MapPinIcon, WarehouseIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldLabel } from "@/components/ui/field-label";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import type { TrackingResult } from "@/types";
 
@@ -27,13 +28,13 @@ export function TrackingProgress({
           <div className="flex min-w-0 items-start gap-2">
             <MapPinIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
-              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">From</p>
+              <FieldLabel>From</FieldLabel>
               <p className="truncate text-sm">{origin.name}</p>
             </div>
           </div>
           <div className="flex min-w-0 items-start gap-2 text-right">
             <div className="min-w-0">
-              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">To</p>
+              <FieldLabel>To</FieldLabel>
               <p className="truncate text-sm">{destination.name}</p>
             </div>
             <WarehouseIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />

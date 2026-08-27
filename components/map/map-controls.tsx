@@ -24,7 +24,7 @@ export function MapControls({ onFitFleet, onLocateSelected, canLocateSelected }:
   const map = useMapInstance();
 
   return (
-    <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-md border border-border bg-background/90 p-1 shadow-sm backdrop-blur">
+    <div className="absolute right-3 top-3 z-10 flex flex-col gap-0.5 rounded-md border border-border bg-background p-1 shadow-sm">
       <Tooltip>
         <TooltipTrigger
           render={

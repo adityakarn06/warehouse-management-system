@@ -61,7 +61,7 @@ export function WarehouseMarker({ latitude, longitude, name, kind }: WarehouseMa
       />
       <span
         className={cn(
-          "max-w-28 truncate rounded bg-background/90 px-1 py-px text-[0.6rem] leading-tight shadow-sm ring-1 ring-border",
+          "max-w-28 truncate rounded-sm border border-border bg-background px-1 py-px text-2xs leading-tight shadow-sm",
           isDestination ? "font-medium" : "text-muted-foreground",
         )}
       >

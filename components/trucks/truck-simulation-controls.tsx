@@ -64,7 +64,7 @@ export function TruckSimulationControls({ truckId, reference, live }: TruckSimul
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-border p-2">
-      <span className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
+      <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
         Simulation
       </span>
 
@@ -99,24 +99,24 @@ export function TruckSimulationControls({ truckId, reference, live }: TruckSimul
       </div>
 
       {errorMessage ? (
-        <p className="rounded-sm bg-destructive/10 px-2 py-1 text-[0.65rem] text-destructive">
+        <p className="rounded-sm bg-destructive/10 px-2 py-1 text-2xs text-destructive">
           {errorMessage}
         </p>
       ) : null}
 
       <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.65rem] text-muted-foreground">Delay</span>
+          <span className="text-2xs text-muted-foreground">Delay</span>
           <span className={cn("font-medium", isDelayed && "text-destructive")}>
             {isDelayed ? live.activeDelay.replace(/_/g, " ") : "None"}
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.65rem] text-muted-foreground">Status</span>
+          <span className="text-2xs text-muted-foreground">Status</span>
           <StatusBadge domain="truck" value={live.status} />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.65rem] text-muted-foreground">Effective speed</span>
+          <span className="text-2xs text-muted-foreground">Effective speed</span>
           <span className="tabular-nums">
             {live.speedKmph} km/h
             {baseSpeedKmph !== null ? (
@@ -125,9 +125,9 @@ export function TruckSimulationControls({ truckId, reference, live }: TruckSimul
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[0.65rem] text-muted-foreground">ETA</span>
+          <span className="text-2xs text-muted-foreground">ETA</span>
           <span className="tabular-nums">{formatDateTime(live.eta)}</span>
-          <span className="text-[0.6rem] tabular-nums text-muted-foreground">
+          <span className="text-2xs tabular-nums text-muted-foreground">
             {formatCountdown(live.eta, now)}
           </span>
         </div>
@@ -136,11 +136,11 @@ export function TruckSimulationControls({ truckId, reference, live }: TruckSimul
       {latestAlert ? (
         <div className="flex flex-col gap-1 rounded-sm bg-muted/40 px-2 py-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-[0.65rem] font-medium">{latestAlert.title}</span>
+            <span className="truncate text-2xs font-medium">{latestAlert.title}</span>
             <StatusBadge domain="alertSeverity" value={latestAlert.severity} />
           </div>
-          <p className="text-[0.6rem] text-muted-foreground">{latestAlert.message}</p>
-          <span className="text-[0.6rem] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">{latestAlert.message}</p>
+          <span className="text-2xs text-muted-foreground">
             {formatRelativeTime(latestAlert.createdAt, now)}
           </span>
         </div>

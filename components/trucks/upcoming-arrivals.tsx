@@ -26,7 +26,7 @@ function ArrivalRow({ truck }: { truck: YardTruck }) {
           <span className="text-xs font-medium">{truck.reference}</span>
           <StatusBadge domain="truck" value={live.status} />
         </div>
-        <span className="truncate text-[0.65rem] text-muted-foreground">
+        <span className="truncate text-2xs text-muted-foreground">
           {truck.carrier}
           {truck.route ? ` · ${truck.route.destinationName}` : null}
         </span>
@@ -36,11 +36,11 @@ function ArrivalRow({ truck }: { truck: YardTruck }) {
           <span className="text-xs tabular-nums">{formatTime(live.eta)}</span>
           {/* The arrival instant only moves when the backend re-estimates it;
               this is the part that counts down in between. */}
-          <span className="text-[0.65rem] tabular-nums text-muted-foreground">
+          <span className="text-2xs tabular-nums text-muted-foreground">
             {formatCountdown(live.eta, now)}
           </span>
         </div>
-        <span className="text-[0.65rem] tabular-nums text-muted-foreground">
+        <span className="text-2xs tabular-nums text-muted-foreground">
           {Math.round(live.progress)}%
         </span>
       </div>

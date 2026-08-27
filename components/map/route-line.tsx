@@ -4,13 +4,18 @@ import { useEffect } from "react";
 import type { GeoJSONSource } from "mapbox-gl";
 
 import { useRoute } from "@/features/routes";
+import {
+  ROUTE_CASING_COLOR,
+  ROUTE_IDLE_COLOR,
+  ROUTE_IDLE_OPACITY,
+  ROUTE_IDLE_WIDTH,
+  ROUTE_SELECTED_COLOR,
+  ROUTE_SELECTED_OPACITY,
+  ROUTE_SELECTED_WIDTH,
+} from "@/lib/mapbox/config";
 import type { LatLng } from "@/types";
 
 import { useMapInstance } from "./map-context";
-
-const CASING_COLOR = "#ffffff";
-const IDLE_COLOR = "#94a3b8";
-const SELECTED_COLOR = "#2563eb";
 
 /** `@types/geojson` is not a dependency here, so the one shape we build is
  * declared locally rather than pulling in a package for a single type. */
@@ -69,7 +74,7 @@ export function RouteLine({ routeId, isSelected }: { routeId: string; isSelected
         type: "line",
         source: sourceId,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": CASING_COLOR, "line-width": 5, "line-opacity": 0.7 },
+        paint: { "line-color": ROUTE_CASING_COLOR, "line-width": 5, "line-opacity": 0.7 },
       });
 
       map.addLayer({
@@ -77,16 +82,24 @@ export function RouteLine({ routeId, isSelected }: { routeId: string; isSelected
         type: "line",
         source: sourceId,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": IDLE_COLOR, "line-width": 2, "line-opacity": 0.75 },
+        paint: { "line-color": ROUTE_IDLE_COLOR,
+          "line-width": ROUTE_IDLE_WIDTH,
+          "line-opacity": ROUTE_IDLE_OPACITY },
       });
     }
 
     return () => {
-      // Removal can race `map.remove()` during unmount, so every step is guarded.
-      if (!map.getStyle()) return;
-      if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
-      if (map.getLayer(casingLayerId)) map.removeLayer(casingLayerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      // Removal can race `map.remove()` during unmount. In mapbox-gl v3
+      // `getStyle()` on an already-removed map *throws* rather than returning
+      // undefined, so the guard itself has to be inside the try.
+      try {
+        if (!map.getStyle()) return;
+        if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+        if (map.getLayer(casingLayerId)) map.removeLayer(casingLayerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      } catch {
+        // The map is already gone; its layers and sources went with it.
+      }
     };
   }, [map, geometry, sourceId, casingLayerId, lineLayerId]);
 
@@ -94,10 +107,22 @@ export function RouteLine({ routeId, isSelected }: { routeId: string; isSelected
   useEffect(() => {
     if (!map || !map.getLayer(lineLayerId)) return;
 
-    map.setPaintProperty(lineLayerId, "line-color", isSelected ? SELECTED_COLOR : IDLE_COLOR);
-    map.setPaintProperty(lineLayerId, "line-width", isSelected ? 3.5 : 2);
-    map.setPaintProperty(lineLayerId, "line-opacity", isSelected ? 1 : 0.55);
-    map.setPaintProperty(casingLayerId, "line-opacity", isSelected ? 0.9 : 0.5);
+    map.setPaintProperty(
+      lineLayerId,
+      "line-color",
+      isSelected ? ROUTE_SELECTED_COLOR : ROUTE_IDLE_COLOR,
+    );
+    map.setPaintProperty(
+      lineLayerId,
+      "line-width",
+      isSelected ? ROUTE_SELECTED_WIDTH : ROUTE_IDLE_WIDTH,
+    );
+    map.setPaintProperty(
+      lineLayerId,
+      "line-opacity",
+      isSelected ? ROUTE_SELECTED_OPACITY : ROUTE_IDLE_OPACITY,
+    );
+    map.setPaintProperty(casingLayerId, "line-opacity", isSelected ? 0.9 : 0.35);
   }, [map, isSelected, geometry, lineLayerId, casingLayerId]);
 
   return null;

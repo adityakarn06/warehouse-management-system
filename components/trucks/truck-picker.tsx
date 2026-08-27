@@ -24,13 +24,13 @@ function TruckRow({ truck }: { truck: TruckListItem }) {
       type="button"
       onClick={() => selectTruck(isSelected ? null : truck.id)}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-left transition-colors",
-        isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40",
+        "flex w-full items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5 text-left transition-colors",
+        isSelected ? "border-primary ring-1 ring-primary/20" : "hover:bg-muted/40",
       )}
     >
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-xs font-medium">{truck.reference}</span>
-        <span className="flex items-center gap-1 truncate text-[0.65rem] text-muted-foreground">
+        <span className="flex items-center gap-1 truncate text-2xs text-muted-foreground">
           {assignment ? `Dock ${assignment.dockCode}` : "No dock assigned"}
           {/* Which dock is only half the fact — whether it is a proposal or a
               commitment is the other half, and the store already knows. */}

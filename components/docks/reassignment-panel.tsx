@@ -28,7 +28,7 @@ function ReassignmentRow({ entry, now }: { entry: LiveAssignmentEntry; now: numb
   const reference = truck?.reference ?? entry.truckId;
 
   return (
-    <li className="flex flex-col gap-1 rounded-md border border-warning/30 bg-warning/5 px-2.5 py-2 text-[0.65rem]">
+    <li className="flex flex-col gap-1 rounded-md border border-warning/30 bg-warning/5 px-2.5 py-2 text-2xs">
       <div className="flex items-center justify-between gap-2">
         <span className="truncate font-medium text-foreground">{reference} reassigned</span>
         <AssignmentStateBadge state="REASSIGNED" />
@@ -56,7 +56,7 @@ function ReassignmentRow({ entry, now }: { entry: LiveAssignmentEntry; now: numb
         <p className="text-muted-foreground">{entry.reasons.join(" · ")}</p>
       ) : null}
 
-      <span className="text-[0.6rem] text-muted-foreground">
+      <span className="text-2xs text-muted-foreground">
         {formatRelativeTime(entry.serverTimestamp, now)}
       </span>
     </li>
@@ -88,7 +88,7 @@ function NoDockRow({ alert, now }: { alert: RealtimeAlert; now: number }) {
     : null;
 
   return (
-    <li className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-[0.65rem]">
+    <li className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-2xs">
       <div className="flex items-center justify-between gap-2">
         <span className="truncate font-medium text-foreground">{alert.title}</span>
         <AssignmentStateBadge state="NO_DOCK_AVAILABLE" />
@@ -106,7 +106,7 @@ function NoDockRow({ alert, now }: { alert: RealtimeAlert; now: number }) {
         </ul>
       ) : null}
 
-      <span className="text-[0.6rem] text-muted-foreground">
+      <span className="text-2xs text-muted-foreground">
         {formatRelativeTime(alert.createdAt, now)}
       </span>
     </li>
@@ -147,7 +147,7 @@ export function ReassignmentPanel() {
         <ReassignmentRow key={entry.truckId} entry={entry} now={now} />
       ))}
       {olderCount > 0 ? (
-        <li className="px-2.5 py-1 text-[0.6rem] text-muted-foreground">
+        <li className="px-2.5 py-1 text-2xs text-muted-foreground">
           + {olderCount} earlier {olderCount === 1 ? "reassignment" : "reassignments"} this session
           — see Alerts for the full record.
         </li>

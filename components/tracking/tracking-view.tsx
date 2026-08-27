@@ -3,6 +3,7 @@
 import { PackageSearchIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FieldLabel } from "@/components/ui/field-label";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -130,9 +131,7 @@ export function TrackingView({ trackingNumber }: { trackingNumber: string }) {
 
           <Card>
             <CardContent>
-              <p className="mb-4 text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                Progress
-              </p>
+              <FieldLabel className="mb-4">Progress</FieldLabel>
               <TrackingTimeline status={timelineStatus} />
             </CardContent>
           </Card>

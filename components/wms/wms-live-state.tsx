@@ -11,11 +11,11 @@ function TruckRow({ truckId }: { truckId: string }) {
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5">
-      <span className="text-[0.65rem] font-medium">{live?.reference ?? truckId}</span>
+      <span className="text-2xs font-medium">{live?.reference ?? truckId}</span>
       {live ? (
         <StatusBadge domain="truck" value={live.status} />
       ) : (
-        <span className="text-[0.6rem] text-muted-foreground">not held live</span>
+        <span className="text-2xs text-muted-foreground">not held live</span>
       )}
     </div>
   );
@@ -26,11 +26,11 @@ function DockRow({ dockDoorId }: { dockDoorId: string }) {
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5">
-      <span className="text-[0.65rem] font-medium">{live?.code ?? dockDoorId}</span>
+      <span className="text-2xs font-medium">{live?.code ?? dockDoorId}</span>
       {live ? (
         <StatusBadge domain="dock" value={live.status} />
       ) : (
-        <span className="text-[0.6rem] text-muted-foreground">not held live</span>
+        <span className="text-2xs text-muted-foreground">not held live</span>
       )}
     </div>
   );
@@ -64,7 +64,7 @@ export function WmsLiveState({ result }: { result: WmsSimulateResult }) {
       <div className="flex items-center gap-1.5">
         <RadioIcon className="size-3.5 text-muted-foreground" />
         <span className="text-xs font-medium">Live state</span>
-        <span className="text-[0.6rem] text-muted-foreground">
+        <span className="text-2xs text-muted-foreground">
           as pushed over Socket.IO — not the documented outcome
         </span>
       </div>

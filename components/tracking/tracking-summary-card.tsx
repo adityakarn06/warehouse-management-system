@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { FIELD_LABEL_CLASS } from "@/components/ui/field-label";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { ShipmentStatus, TrackingResult, TruckStatus } from "@/types";
 
@@ -50,7 +51,7 @@ export function TrackingSummaryCard({
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className={FIELD_LABEL_CLASS}>{label}</dt>
       <dd className={mono ? "truncate font-mono text-sm" : "truncate text-sm capitalize"}>{value}</dd>
     </div>
   );

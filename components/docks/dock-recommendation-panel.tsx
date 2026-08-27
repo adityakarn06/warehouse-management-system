@@ -101,28 +101,28 @@ export function DockRecommendationPanel() {
           <span className="text-xs font-semibold">{data.truck.reference}</span>
           <StatusBadge domain="truck" value={data.truck.status} />
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-[0.65rem] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
           <span className="font-medium text-foreground">{data.shipment.reference}</span>
           <Badge variant="outline">{data.shipment.priority}</Badge>
           <Badge variant="outline">{data.shipment.loadType}</Badge>
         </div>
-        <p className="text-[0.65rem] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           Scored against {formatTime(data.requestedWindow.start)}–
           {formatTime(data.requestedWindow.end)} ({data.requestedWindow.minutes} min)
         </p>
         {data.currentAssignment ? (
-          <p className="text-[0.65rem] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">
             Currently assigned:{" "}
             <span className="font-medium text-foreground">{data.currentAssignment.dockCode}</span>
           </p>
         ) : (
-          <p className="text-[0.65rem] text-muted-foreground">No dock assigned</p>
+          <p className="text-2xs text-muted-foreground">No dock assigned</p>
         )}
       </header>
 
       {/* The backend's own result line for the last commit. */}
       {committed ? (
-        <div className="rounded-lg border border-success/30 bg-success/5 p-2.5 text-[0.65rem]">
+        <div className="rounded-lg border border-success/30 bg-success/5 p-2.5 text-2xs">
           <p className="font-medium text-foreground">
             {committed.created ? "Assignment created" : "Already assigned"}
             {committedCode ? ` · ${committedCode}` : ""}
@@ -137,7 +137,7 @@ export function DockRecommendationPanel() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-2.5">
           {/* The backend's sentence, unedited — a 400 here quotes the exact
               exclusion reason, which is the whole explanation. */}
-          <p className="text-[0.65rem] text-destructive">{failure.message}</p>
+          <p className="text-2xs text-destructive">{failure.message}</p>
           {failure.isConflict ? (
             <Button
               size="xs"
@@ -197,7 +197,7 @@ export function DockRecommendationPanel() {
               {data.excluded.map((excluded) => (
                 <li
                   key={excluded.dockId}
-                  className="rounded-md border border-border px-2 py-1.5 text-[0.65rem]"
+                  className="rounded-md border border-border px-2 py-1.5 text-2xs"
                 >
                   <span className="font-medium text-foreground">{excluded.dockCode}</span>
                   <span className="text-muted-foreground"> — {excluded.reason}</span>

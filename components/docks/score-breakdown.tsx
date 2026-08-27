@@ -51,7 +51,7 @@ export function ScoreBreakdown({ recommendation }: { recommendation: DockRecomme
         </div>
       ) : null}
 
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[0.65rem] text-muted-foreground">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-2xs text-muted-foreground">
         {COMPONENTS.map(({ key, label, className }) => (
           <div key={key} className="flex items-center justify-between gap-2">
             <dt className="flex items-center gap-1 truncate">

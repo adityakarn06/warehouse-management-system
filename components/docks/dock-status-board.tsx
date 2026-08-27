@@ -41,7 +41,7 @@ function DockTile({ dock }: { dock: YardDock }) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-1.5 rounded-lg border p-3 transition-colors",
+        "flex flex-col gap-1.5 rounded-lg border bg-card p-3 transition-colors",
         isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
       )}
     >
@@ -53,18 +53,18 @@ function DockTile({ dock }: { dock: YardDock }) {
         className="flex flex-col gap-1.5 text-left"
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold">{dock.code}</span>
+          <span className="text-xs font-semibold tracking-tight">{dock.code}</span>
           <StatusBadge domain="dock" value={status} />
         </div>
-        <span className="truncate text-[0.65rem] text-muted-foreground">{dock.name}</span>
-        <span className="text-[0.65rem] text-muted-foreground">{dock.zone}</span>
+        <span className="truncate text-2xs text-muted-foreground">{dock.name}</span>
+        <span className="text-2xs text-muted-foreground">{dock.zone}</span>
       </button>
 
       <div className="flex flex-wrap gap-1">
         {dock.supportedLoadTypes.map((loadType) => (
           <span
             key={loadType}
-            className="rounded-sm bg-muted px-1 py-0.5 text-[0.6rem] text-muted-foreground"
+            className="rounded-sm bg-muted px-1 py-0.5 text-2xs text-muted-foreground"
           >
             {loadType}
           </span>
@@ -72,7 +72,7 @@ function DockTile({ dock }: { dock: YardDock }) {
       </div>
 
       {assignment ? (
-        <div className="flex flex-col gap-0.5 border-t border-border pt-1.5 text-[0.65rem] text-muted-foreground">
+        <div className="flex flex-col gap-0.5 border-t border-border pt-1.5 text-2xs text-muted-foreground">
           <span>
             <span className="font-medium text-foreground">{assignment.truckReference}</span>
             {assignment.scheduledStart ? <span>{" · "}{formatTime(assignment.scheduledStart)}</span> : null}
@@ -82,7 +82,7 @@ function DockTile({ dock }: { dock: YardDock }) {
       ) : null}
 
       {unavailableReason ? (
-        <div className="border-t border-border pt-1.5 text-[0.65rem] text-destructive">
+        <div className="border-t border-border pt-1.5 text-2xs text-destructive">
           {unavailableReason}
         </div>
       ) : null}

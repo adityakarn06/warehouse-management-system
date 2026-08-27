@@ -39,7 +39,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <TruckIcon />
               <div className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-medium">Where&apos;s My Truck</span>
-                <span className="truncate text-[0.65rem] text-sidebar-foreground/60">
+                <span className="truncate text-2xs text-sidebar-foreground/60">
                   Control Tower
                 </span>
               </div>

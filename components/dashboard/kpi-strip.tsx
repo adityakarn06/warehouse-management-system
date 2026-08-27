@@ -1,5 +1,5 @@
 import { KpiCard } from "@/components/dashboard/kpi-card";
-import { CardSkeleton } from "@/components/ui/loading-skeleton";
+import { KpiSkeleton } from "@/components/ui/loading-skeleton";
 import type { DashboardKpis } from "@/features/yard";
 
 interface KpiStripProps {
@@ -12,7 +12,7 @@ export function KpiStrip({ kpis, isPending }: KpiStripProps) {
     return (
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, index) => (
-          <CardSkeleton key={index} />
+          <KpiSkeleton key={index} />
         ))}
       </div>
     );

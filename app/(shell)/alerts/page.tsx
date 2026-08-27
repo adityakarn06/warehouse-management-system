@@ -7,7 +7,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { alertSeverityBorder, StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { TableSkeleton } from "@/components/ui/loading-skeleton";
 import { useAlertFeed } from "@/features/alerts";
@@ -26,12 +26,6 @@ const TYPES: AlertType[] = [
   "NO_DOCK_AVAILABLE",
   "TRUCK_ARRIVING",
 ];
-
-const severityBorder: Record<AlertSeverity, string> = {
-  CRITICAL: "border-l-destructive",
-  WARNING: "border-l-warning",
-  INFO: "border-l-info",
-};
 
 /**
  * The persistent alert history — the source of truth for what happened, with
@@ -81,7 +75,7 @@ export default function AlertsPage() {
     <PageShell title="Alerts" description="Everything the backend has raised.">
       {historyError ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
-          <p className="text-[0.65rem] text-destructive">
+          <p className="text-2xs text-destructive">
             {historyError} Showing live alerts only.
           </p>
           <Button size="xs" variant="outline" onClick={() => void query.refetch()}>
@@ -148,7 +142,7 @@ export default function AlertsPage() {
                 onClick={() => markRead(alert.id)}
                 className={cn(
                   "flex w-full flex-col gap-1 rounded-md border border-border border-l-2 px-3 py-2 text-left transition-colors hover:bg-muted/60",
-                  severityBorder[alert.severity],
+                  alertSeverityBorder[alert.severity],
                   alert.isRead ? "opacity-60" : "bg-muted/30",
                 )}
               >
@@ -156,12 +150,12 @@ export default function AlertsPage() {
                   <span className="truncate text-xs font-medium">{alert.title}</span>
                   <StatusBadge domain="alertSeverity" value={alert.severity} />
                 </div>
-                <p className="text-[0.65rem] text-muted-foreground">{alert.message}</p>
+                <p className="text-2xs text-muted-foreground">{alert.message}</p>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Badge variant="secondary">{alert.type.replace(/_/g, " ")}</Badge>
                   {alert.truckId ? <Badge variant="outline">{alert.truckId}</Badge> : null}
                   {alert.dockDoorId ? <Badge variant="outline">{alert.dockDoorId}</Badge> : null}
-                  <span className="text-[0.6rem] text-muted-foreground">
+                  <span className="text-2xs text-muted-foreground">
                     {formatRelativeTime(alert.createdAt, now)}
                   </span>
                 </div>

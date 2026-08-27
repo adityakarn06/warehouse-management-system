@@ -34,7 +34,7 @@ export function DockRecommendationCard({
       className={cn(
         "flex flex-col gap-2 rounded-lg border p-3 transition-colors",
         isTop
-          ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
+          ? "border-primary/40 bg-primary/5"
           : "border-border bg-card",
       )}
     >
@@ -43,7 +43,7 @@ export function DockRecommendationCard({
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
-                "flex size-4 shrink-0 items-center justify-center rounded-full text-[0.6rem] font-semibold tabular-nums",
+                "flex size-4 shrink-0 items-center justify-center rounded-full text-2xs font-semibold tabular-nums",
                 isTop ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}
             >
@@ -55,7 +55,7 @@ export function DockRecommendationCard({
                 committed one. Only the backend commits an assignment. */}
             <AssignmentStateBadge state="RECOMMENDED" />
           </div>
-          <span className="truncate text-[0.65rem] text-muted-foreground">
+          <span className="truncate text-2xs text-muted-foreground">
             {recommendation.dockName} · {recommendation.zone}
           </span>
         </div>
@@ -63,7 +63,7 @@ export function DockRecommendationCard({
         <div className="flex shrink-0 flex-col items-end gap-0.5">
           <span className="text-sm font-semibold tabular-nums">
             {recommendation.score}
-            <span className="text-[0.65rem] font-normal text-muted-foreground">/100</span>
+            <span className="text-2xs font-normal text-muted-foreground">/100</span>
           </span>
           {isTop ? (
             <Badge variant="default" className="gap-1">
@@ -75,7 +75,7 @@ export function DockRecommendationCard({
       </div>
 
       {recommendation.availableFrom ? (
-        <p className="text-[0.65rem] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           Free from {formatTime(recommendation.availableFrom)}
         </p>
       ) : null}
@@ -86,7 +86,7 @@ export function DockRecommendationCard({
         {recommendation.reasons.map((reason) => (
           <li
             key={reason}
-            className="flex items-start gap-1 text-[0.65rem] text-muted-foreground"
+            className="flex items-start gap-1 text-2xs text-muted-foreground"
           >
             <CheckIcon className="mt-0.5 size-2.5 shrink-0 text-success" />
             <span>{reason}</span>

@@ -60,7 +60,7 @@ export function DockCard({ dock }: { dock: DockListItem }) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors",
+        "flex flex-col gap-1.5 rounded-lg border bg-card p-3 transition-colors",
         isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
       )}
     >
@@ -69,21 +69,21 @@ export function DockCard({ dock }: { dock: DockListItem }) {
       <button
         type="button"
         onClick={() => selectDock(isSelected ? null : dock.id)}
-        className="flex flex-col gap-1 text-left"
+        className="flex flex-col gap-1.5 text-left"
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold">{dock.code}</span>
+          <span className="text-xs font-semibold tracking-tight">{dock.code}</span>
           <StatusBadge domain="dock" value={status} />
         </div>
-        <span className="truncate text-[0.65rem] text-muted-foreground">{dock.name}</span>
-        <span className="text-[0.65rem] text-muted-foreground">{dock.zone}</span>
+        <span className="truncate text-2xs text-muted-foreground">{dock.name}</span>
+        <span className="text-2xs text-muted-foreground">{dock.zone}</span>
       </button>
 
       <div className="flex flex-wrap gap-1">
         {dock.supportedLoadTypes.map((loadType) => (
           <span
             key={loadType}
-            className="rounded-sm bg-muted px-1 py-0.5 text-[0.6rem] text-muted-foreground"
+            className="rounded-sm bg-muted px-1 py-0.5 text-2xs text-muted-foreground"
           >
             {loadType}
           </span>
@@ -91,7 +91,7 @@ export function DockCard({ dock }: { dock: DockListItem }) {
       </div>
 
       {truckReference ? (
-        <div className="flex flex-col gap-0.5 border-t border-border pt-1.5 text-[0.65rem]">
+        <div className="flex flex-col gap-0.5 border-t border-border pt-1.5 text-2xs">
           <span className="flex items-center gap-1">
             <TruckIcon className="size-2.5 shrink-0 text-muted-foreground" />
             <span className="font-medium text-foreground">{truckReference}</span>
@@ -117,7 +117,7 @@ export function DockCard({ dock }: { dock: DockListItem }) {
       ) : null}
 
       {unavailableReason ? (
-        <p className="border-t border-border pt-1.5 text-[0.65rem] text-destructive">
+        <p className="border-t border-border pt-1.5 text-2xs text-destructive">
           {unavailableReason}
         </p>
       ) : null}

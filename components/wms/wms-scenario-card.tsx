@@ -30,7 +30,7 @@ export function WmsScenarioCard({ meta, isRunning, disabled, onRun }: WmsScenari
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-semibold">{meta.label}</span>
-          <code className="text-[0.6rem] text-muted-foreground">{meta.scenario}</code>
+          <code className="text-2xs text-muted-foreground">{meta.scenario}</code>
         </div>
         <Button size="xs" disabled={disabled} onClick={() => onRun(meta.scenario)}>
           {isRunning ? <Loader2Icon className="animate-spin" /> : <PlayIcon />}
@@ -38,23 +38,23 @@ export function WmsScenarioCard({ meta, isRunning, disabled, onRun }: WmsScenari
         </Button>
       </div>
 
-      <p className="text-[0.65rem] text-muted-foreground">{meta.description}</p>
+      <p className="text-2xs text-muted-foreground">{meta.description}</p>
 
       <div className="flex flex-col gap-1">
-        <span className="text-[0.6rem] font-medium tracking-wide text-muted-foreground uppercase">
+        <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
           Documented sequence
         </span>
         <div className="flex flex-wrap items-center gap-1">
           {meta.sequence.map((step, index) => (
             <div key={`${step}-${index}`} className="flex items-center gap-1">
-              {index > 0 ? <span className="text-[0.6rem] text-muted-foreground">→</span> : null}
+              {index > 0 ? <span className="text-2xs text-muted-foreground">→</span> : null}
               <Badge variant="outline">{step}</Badge>
             </div>
           ))}
         </div>
       </div>
 
-      <p className="text-[0.6rem] text-muted-foreground">
+      <p className="text-2xs text-muted-foreground">
         <span className="font-medium">Ends with:</span> {meta.endsWith}
       </p>
     </div>

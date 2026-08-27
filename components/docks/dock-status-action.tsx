@@ -198,7 +198,7 @@ export function DockStatusAction({
 
           {failure ? (
             /* The backend's own message, unedited. */
-            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[0.65rem] text-destructive">
+            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-2xs text-destructive">
               {failure.message}
             </p>
           ) : null}

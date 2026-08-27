@@ -45,6 +45,18 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* One tier below `text-xs`, replacing four bespoke arbitrary sizes
+     (0.55/0.6/0.625/0.65rem). 0.6875rem is 11px on a whole pixel and rounds
+     every one of them *up*, and its line-height resolves to the same 1rem line
+     box as `text-xs` — so the two are interchangeable in a flex row without
+     shifting baselines. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: calc(1 / 0.6875);
+
+  /* Radius policy — `lg` surfaces/tiles · `md` rows, strips, controls ·
+     `sm` micro-chips nested inside a surface · `full` pills/dots/tracks ·
+     `xl` floating overlays only. Never a bare `rounded`: it is a hardcoded
+     0.25rem that does not track `--radius`. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

@@ -21,7 +21,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="text-[0.6rem] tabular-nums text-muted-foreground">{index + 1}</span>
+          <span className="text-2xs tabular-nums text-muted-foreground">{index + 1}</span>
           <span className="text-xs font-medium">{step.eventType.replace(/_/g, " ")}</span>
         </div>
         <Badge variant={step.ok ? "success" : "destructive"}>
@@ -33,7 +33,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
       {/* The backend's own sentence — a WMS refusal names the door or the rule
           it broke, which is more use than anything written here. */}
       {step.error ? (
-        <p className="rounded-sm bg-destructive/10 px-2 py-1 text-[0.65rem] text-destructive">
+        <p className="rounded-sm bg-destructive/10 px-2 py-1 text-2xs text-destructive">
           {step.error}
         </p>
       ) : null}
@@ -56,7 +56,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
               {result.effects.map((effect, effectIndex) => (
                 <li
                   key={`${effect}-${effectIndex}`}
-                  className="font-mono text-[0.6rem] text-muted-foreground"
+                  className="font-mono text-2xs text-muted-foreground"
                 >
                   {effect}
                 </li>
@@ -65,7 +65,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
           ) : null}
 
           <div className="flex flex-wrap items-center gap-1">
-            <span className="text-[0.6rem] text-muted-foreground">Emitted</span>
+            <span className="text-2xs text-muted-foreground">Emitted</span>
             {result.emitted.length > 0 ? (
               result.emitted.map((event, eventIndex) => (
                 <Badge key={`${event}-${eventIndex}`} variant="info">
@@ -75,7 +75,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
             ) : (
               // APPOINTMENT_UPDATED deliberately emits nothing (docs/realtime.md
               // §Phase 9) — an empty list is the contract, not a missed event.
-              <span className="text-[0.6rem] text-muted-foreground">
+              <span className="text-2xs text-muted-foreground">
                 nothing — this event raises no realtime event by contract
               </span>
             )}
@@ -84,10 +84,10 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
           {result.alert ? (
             <div className="flex flex-col gap-1 rounded-sm bg-muted/40 px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[0.65rem] font-medium">{result.alert.title}</span>
+                <span className="truncate text-2xs font-medium">{result.alert.title}</span>
                 <StatusBadge domain="alertSeverity" value={result.alert.severity} />
               </div>
-              <p className="text-[0.6rem] text-muted-foreground">{result.alert.message}</p>
+              <p className="text-2xs text-muted-foreground">{result.alert.message}</p>
             </div>
           ) : null}
         </>
@@ -112,7 +112,7 @@ export function WmsStepList({ result }: { result: WmsSimulateResult }) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium">Last run</span>
         <Badge variant="outline">{result.scenario}</Badge>
-        <span className="text-[0.65rem] text-muted-foreground">
+        <span className="text-2xs text-muted-foreground">
           {result.steps.length} step{result.steps.length === 1 ? "" : "s"}
         </span>
         {failedCount > 0 ? (
@@ -123,7 +123,7 @@ export function WmsStepList({ result }: { result: WmsSimulateResult }) {
       </div>
 
       {failedCount > 0 ? (
-        <p className="text-[0.65rem] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           A failing step is captured on its own and the run continues — the steps below show
           which half of the sequence went through.
         </p>

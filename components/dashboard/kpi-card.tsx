@@ -20,13 +20,13 @@ interface KpiCardProps {
 
 export function KpiCard({ label, value, tone = "neutral", hint }: KpiCardProps) {
   return (
-    <Card>
+    <Card size="sm">
       <CardContent className="flex flex-col gap-1">
         <CardDescription>{label}</CardDescription>
-        <CardTitle className={cn("text-2xl tabular-nums", toneToTextClass[tone])}>
+        <CardTitle className={cn("text-xl tabular-nums", toneToTextClass[tone])}>
           {value}
         </CardTitle>
-        {hint ? <span className="text-[0.65rem] text-muted-foreground">{hint}</span> : null}
+        {hint ? <span className="text-2xs text-muted-foreground">{hint}</span> : null}
       </CardContent>
     </Card>
   );

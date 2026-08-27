@@ -8,7 +8,7 @@ import { KpiStrip } from "@/components/dashboard/kpi-strip";
 import { PageShell } from "@/components/layout/page-shell";
 import { SelectedTruckPanel } from "@/components/trucks/selected-truck-panel";
 import { UpcomingArrivals } from "@/components/trucks/upcoming-arrivals";
-import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
+import { DockTileSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import {
   useDashboardKpis,
@@ -81,7 +81,7 @@ export default function DashboardPage() {
         {isPending ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             {Array.from({ length: 8 }).map((_, index) => (
-              <CardSkeleton key={index} />
+              <DockTileSkeleton key={index} />
             ))}
           </div>
         ) : (
