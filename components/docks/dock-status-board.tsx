@@ -2,15 +2,17 @@
 
 import { WarehouseIcon } from "lucide-react";
 
+import { DockStatusAction } from "@/components/docks/dock-status-action";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useDock, useTruck, useUIStore } from "@/stores";
+import { useDock, useSelectedDockId, useTruck, useUIStore } from "@/stores";
 import type { YardDock } from "@/types";
 
 function DockTile({ dock }: { dock: YardDock }) {
   const live = useDock(dock.id);
+  const selectedDockId = useSelectedDockId();
   const selectDock = useUIStore((s) => s.selectDock);
   const status = live?.status ?? dock.status;
 
@@ -25,23 +27,39 @@ function DockTile({ dock }: { dock: YardDock }) {
   const assignment = occupyingTruckId
     ? {
         truckReference: liveTruck?.reference ?? restAssignment?.truckReference ?? occupyingTruckId,
+        shipmentReference: restAssignment?.shipmentReference ?? null,
         scheduledStart: restAssignment?.scheduledStart ?? null,
       }
     : null;
 
+  // Live reason first, snapshot second; never shown for a door back in service.
+  const unavailableReason =
+    status === "UNAVAILABLE" ? (live?.unavailableReason ?? dock.unavailableReason ?? null) : null;
+
+  const isSelected = selectedDockId === dock.id;
+
   return (
-    <button
-      type="button"
-      onClick={() => selectDock(dock.id)}
+    <div
       className={cn(
-        "flex flex-col gap-1.5 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/40",
+        "flex flex-col gap-1.5 rounded-lg border p-3 transition-colors",
+        isSelected ? "border-primary ring-1 ring-primary/20" : "border-border",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold">{dock.code}</span>
-        <StatusBadge domain="dock" value={status} />
-      </div>
-      <span className="text-[0.65rem] text-muted-foreground">{dock.zone}</span>
+      {/* Selection is its own control so the action button below is not an
+          interactive element nested inside another. */}
+      <button
+        type="button"
+        onClick={() => selectDock(isSelected ? null : dock.id)}
+        className="flex flex-col gap-1.5 text-left"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold">{dock.code}</span>
+          <StatusBadge domain="dock" value={status} />
+        </div>
+        <span className="truncate text-[0.65rem] text-muted-foreground">{dock.name}</span>
+        <span className="text-[0.65rem] text-muted-foreground">{dock.zone}</span>
+      </button>
+
       <div className="flex flex-wrap gap-1">
         {dock.supportedLoadTypes.map((loadType) => (
           <span
@@ -52,17 +70,32 @@ function DockTile({ dock }: { dock: YardDock }) {
           </span>
         ))}
       </div>
+
       {assignment ? (
-        <div className="mt-1 border-t border-border pt-1.5 text-[0.65rem] text-muted-foreground">
-          <span className="font-medium text-foreground">{assignment.truckReference}</span>
-          {assignment.scheduledStart ? <span>{" · "}{formatTime(assignment.scheduledStart)}</span> : null}
-        </div>
-      ) : dock.unavailableReason ? (
-        <div className="mt-1 border-t border-border pt-1.5 text-[0.65rem] text-destructive">
-          {dock.unavailableReason}
+        <div className="flex flex-col gap-0.5 border-t border-border pt-1.5 text-[0.65rem] text-muted-foreground">
+          <span>
+            <span className="font-medium text-foreground">{assignment.truckReference}</span>
+            {assignment.scheduledStart ? <span>{" · "}{formatTime(assignment.scheduledStart)}</span> : null}
+          </span>
+          {assignment.shipmentReference ? <span>{assignment.shipmentReference}</span> : null}
         </div>
       ) : null}
-    </button>
+
+      {unavailableReason ? (
+        <div className="border-t border-border pt-1.5 text-[0.65rem] text-destructive">
+          {unavailableReason}
+        </div>
+      ) : null}
+
+      <DockStatusAction
+        dockId={dock.id}
+        code={dock.code}
+        status={status}
+        hasAssignment={Boolean(occupyingTruckId)}
+        size="xs"
+        className="mt-auto w-full"
+      />
+    </div>
   );
 }
 

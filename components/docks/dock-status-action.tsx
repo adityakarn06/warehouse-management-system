@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+
+import { DockCascadeResult } from "@/components/docks/dock-cascade-result";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useUpdateDockStatus } from "@/features/docks";
+import { dockCommandError } from "@/features/docks/errors";
+import { notify } from "@/lib/toast";
+import type { DockStatus } from "@/types";
+
+/** Matches the backend's own default (docs/api.md). Prefilled so the operator
+ * can see what will be recorded, but an unchanged/blank box sends no `reason`
+ * at all and lets the backend apply this same default itself. */
+const DEFAULT_REASON = "Marked unavailable by operations";
+
+interface DockStatusActionProps {
+  dockId: string;
+  code: string;
+  status: DockStatus;
+  /** Whether a truck currently holds this door — drives the cascade warning.
+   * Read from the server's assignment row, never inferred from the status. */
+  hasAssignment: boolean;
+  size?: "xs" | "sm";
+  className?: string;
+}
+
+/**
+ * The operator's two buttons. The frontend only ever sends `AVAILABLE` or
+ * `UNAVAILABLE`; `RESERVED` and `OCCUPIED` are owned by the assignment engine
+ * and the WMS feed, so those doors get no toggle at all (AGENTS.md §2).
+ */
+export function DockStatusAction({
+  dockId,
+  code,
+  status,
+  hasAssignment,
+  size = "sm",
+  className,
+}: DockStatusActionProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [reason, setReason] = useState(DEFAULT_REASON);
+  const mutation = useUpdateDockStatus();
+
+  const failure = mutation.error
+    ? dockCommandError(mutation.error, `Could not update ${code}.`)
+    : null;
+
+  if (status === "RESERVED" || status === "OCCUPIED") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button size={size} variant="ghost" disabled className={className}>
+              No action
+            </Button>
+          }
+        />
+        <TooltipContent>
+          {status === "RESERVED" ? "Reserved" : "Occupied"} is owned by the backend — release or
+          reassign the booking instead.
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // Putting a door back into service needs no confirmation: it is not
+  // destructive, and the backend decides the resulting status anyway (a door
+  // still holding a booking comes back RESERVED, not AVAILABLE).
+  if (status === "UNAVAILABLE") {
+    return (
+      <Button
+        size={size}
+        variant="outline"
+        disabled={mutation.isPending}
+        className={className}
+        onClick={() =>
+          mutation.mutate(
+            { id: dockId, body: { status: "AVAILABLE" } },
+            {
+              onSuccess: (result) =>
+                notify.success(
+                  result.changed
+                    ? `${code} is now ${result.dock.status}`
+                    : `${code} was already ${result.dock.status}`,
+                ),
+              onError: (error) =>
+                notify.error(dockCommandError(error, `Could not update ${code}.`).message),
+            },
+          )
+        }
+      >
+        {mutation.isPending ? "Working…" : "Make available"}
+      </Button>
+    );
+  }
+
+  function handleConfirm() {
+    const trimmed = reason.trim();
+    mutation.mutate(
+      {
+        id: dockId,
+        // Omitted when blank so the backend applies its own default rather
+        // than this board inventing one.
+        body: { status: "UNAVAILABLE", ...(trimmed ? { reason: trimmed } : {}) },
+      },
+      {
+        onSuccess: (result) =>
+          notify.warning(
+            result.changed ? `${code} is now out of service` : `${code} was already out of service`,
+          ),
+        onError: (error) =>
+          notify.error(dockCommandError(error, `Could not update ${code}.`).message),
+      },
+    );
+  }
+
+  function handleOpenChange(open: boolean) {
+    setIsOpen(open);
+    // Reset on close so a reopened dialog never shows a stale result or the
+    // previous reason. Done in the handler, not an effect (React Compiler).
+    if (!open) {
+      mutation.reset();
+      setReason(DEFAULT_REASON);
+    }
+  }
+
+  return (
+    <>
+      <Button
+        size={size}
+        variant="destructive"
+        className={className}
+        onClick={() => setIsOpen(true)}
+      >
+        Make unavailable
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Take {code} out of service?</DialogTitle>
+            <DialogDescription>
+              {hasAssignment
+                ? "A truck is booked on this door. The backend will re-score every affected truck against the remaining doors and move it, or report that it has nowhere to go."
+                : "The door will stop accepting new assignments until it is put back into service."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {mutation.data ? (
+            <DockCascadeResult result={mutation.data} />
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor={`reason-${dockId}`} className="text-xs font-medium">
+                Reason <span className="text-muted-foreground">(optional)</span>
+              </label>
+              <Textarea
+                id={`reason-${dockId}`}
+                value={reason}
+                rows={3}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder={DEFAULT_REASON}
+              />
+            </div>
+          )}
+
+          {failure ? (
+            /* The backend's own message, unedited. */
+            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[0.65rem] text-destructive">
+              {failure.message}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button size="sm" variant="outline">
+                  {mutation.data ? "Close" : "Cancel"}
+                </Button>
+              }
+            />
+            {mutation.data ? null : (
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={mutation.isPending}
+                onClick={handleConfirm}
+              >
+                {mutation.isPending ? "Working…" : "Make unavailable"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

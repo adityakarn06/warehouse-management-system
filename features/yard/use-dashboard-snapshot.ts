@@ -51,6 +51,7 @@ export function useDashboardSnapshot() {
         status: dock.status,
         occupyingTruckId: dock.currentAssignment?.truckId ?? null,
         activeAssignmentId: dock.currentAssignment?.id ?? null,
+        unavailableReason: dock.status === "UNAVAILABLE" ? (dock.unavailableReason ?? null) : null,
         updatedAt: data.generatedAt,
       };
     });

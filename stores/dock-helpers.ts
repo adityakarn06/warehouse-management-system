@@ -1,9 +1,4 @@
-import type {
-  DockAssignedPayload,
-  DockReassignedPayload,
-  DockStatus,
-  DockStatusChangedPayload,
-} from "@/types";
+import type { DockDetail, DockStatus, DockStatusChangedPayload } from "@/types";
 
 export interface LiveDockEntry {
   dockId: string;
@@ -11,6 +6,10 @@ export interface LiveDockEntry {
   status: DockStatus;
   occupyingTruckId: string | null;
   activeAssignmentId: string | null;
+  /** Why the door is out of service, as the server reported it. `null` for any
+   * status other than `UNAVAILABLE` — carrying a stale reason on a repaired
+   * door would let the board explain an outage that is over. */
+  unavailableReason: string | null;
   updatedAt: string;
 }
 
@@ -32,6 +31,29 @@ export interface LiveAssignmentEntry {
   serverTimestamp: string;
   /** Present only when this entry came from `DOCK_REASSIGNED` — the door the
    * truck was moved off of, and why. Absent for a plain `DOCK_ASSIGNED`. */
+  previousAssignmentId?: string;
+  previousDockDoorId?: string;
+  previousDockCode?: string;
+  reason?: string;
+}
+
+/**
+ * What `applyDockAssignment` actually needs: the "this truck now holds this
+ * door" fact. `DockAssignedPayload` and `DockReassignedPayload` are both
+ * assignable to it, and so is a row returned by the assignment command — which
+ * is why `score` is nullable here while the socket contract keeps it required.
+ * The four `previous*`/`reason` fields are what mark a fact as a reassignment.
+ */
+export interface AssignmentFact {
+  assignmentId: string;
+  truckId: string;
+  shipmentId: string | null;
+  dockDoorId: string;
+  dockCode: string;
+  status: string;
+  score: number | null;
+  reasons: string[];
+  serverTimestamp: string;
   previousAssignmentId?: string;
   previousDockDoorId?: string;
   previousDockCode?: string;
@@ -125,6 +147,7 @@ export function applyDockStatus(state: DockState, payload: DockStatusChangedPayl
       status: payload.status as DockStatus,
       occupyingTruckId: clearsOccupant ? null : (existing?.occupyingTruckId ?? null),
       activeAssignmentId: clearsOccupant ? null : (existing?.activeAssignmentId ?? null),
+      unavailableReason: payload.status === "UNAVAILABLE" ? (payload.unavailableReason ?? null) : null,
       updatedAt: payload.serverTimestamp,
     },
   };
@@ -149,11 +172,9 @@ export function applyDockStatus(state: DockState, payload: DockStatusChangedPayl
  * (dock events carry no sequence number) so a replayed/out-of-order event
  * can't regress state a newer event already applied.
  */
-export function applyDockAssignment(
-  state: DockState,
-  payload: DockAssignedPayload | DockReassignedPayload,
-): DockState {
-  const isReassignment = "previousDockDoorId" in payload;
+export function applyDockAssignment(state: DockState, payload: AssignmentFact): DockState {
+  const previousDockDoorId = payload.previousDockDoorId;
+  const isReassignment = previousDockDoorId !== undefined;
   const existing = state.docksById[payload.dockDoorId];
 
   let docksById = state.docksById;
@@ -173,8 +194,8 @@ export function applyDockAssignment(
       };
     }
 
-    if (isReassignment) {
-      const previousDoor = docksById[payload.previousDockDoorId];
+    if (previousDockDoorId !== undefined) {
+      const previousDoor = docksById[previousDockDoorId];
       if (
         previousDoor &&
         previousDoor.occupyingTruckId === payload.truckId &&
@@ -182,7 +203,7 @@ export function applyDockAssignment(
       ) {
         docksById = {
           ...docksById,
-          [payload.previousDockDoorId]: {
+          [previousDockDoorId]: {
             ...previousDoor,
             occupyingTruckId: null,
             activeAssignmentId: null,
@@ -211,11 +232,144 @@ export function applyDockAssignment(
           reasons: payload.reasons,
           serverTimestamp: payload.serverTimestamp,
           previousAssignmentId: isReassignment ? payload.previousAssignmentId : undefined,
-          previousDockDoorId: isReassignment ? payload.previousDockDoorId : undefined,
+          previousDockDoorId: previousDockDoorId,
           previousDockCode: isReassignment ? payload.previousDockCode : undefined,
           reason: isReassignment ? payload.reason : undefined,
         },
       };
 
   return { docksById, assignmentsByTruckId };
+}
+
+/** The `POST /trucks/:truckId/dock-assignment` assignment row, as far as this
+ * reducer needs it. Narrower than the schema type so the reducer stays usable
+ * from both the command path and a future snapshot path. */
+export interface CommandAssignment {
+  id: string;
+  truckId: string;
+  shipmentId: string;
+  dockDoorId: string;
+  status: string;
+  score?: number | null;
+  reasons?: string[];
+}
+
+/**
+ * Applies the authoritative dock row returned by
+ * `PATCH /docks/:dockId/status` (and the status carried by
+ * `POST /docks/:dockId/release`) without waiting for the socket round-trip.
+ *
+ * `updatedAt` from the server row is reused as this entry's timestamp so the
+ * shared `isOlderThanStored` guard still orders it against live events — the
+ * matching `DOCK_STATUS_CHANGED` is the same fact and simply re-applies.
+ *
+ * The occupant comes from the server's own `ASSIGNED` row; nothing is derived.
+ */
+export function applyDockCommandStatus(state: DockState, dock: DockDetail): DockState {
+  const existing = state.docksById[dock.id];
+  if (isOlderThanStored(existing?.updatedAt, dock.updatedAt)) return state;
+
+  const assigned = dock.assignments?.find((assignment) => assignment.status === "ASSIGNED") ?? null;
+
+  const docksById: DocksById = {
+    ...state.docksById,
+    [dock.id]: {
+      dockId: dock.id,
+      code: dock.code,
+      status: dock.status,
+      occupyingTruckId: assigned?.truck.id ?? null,
+      activeAssignmentId: assigned?.id ?? null,
+      unavailableReason: dock.status === "UNAVAILABLE" ? (dock.unavailableReason ?? null) : null,
+      updatedAt: dock.updatedAt,
+    },
+  };
+
+  // The door no longer holds an ASSIGNED row, so its former occupant's
+  // assignment entry must go with it — see `applyDockStatus`.
+  let assignmentsByTruckId = state.assignmentsByTruckId;
+  const strandedTruckId = existing?.occupyingTruckId;
+  if (
+    !assigned &&
+    strandedTruckId &&
+    strandedTruckId in assignmentsByTruckId &&
+    assignmentsByTruckId[strandedTruckId].dockDoorId === dock.id
+  ) {
+    const next = { ...assignmentsByTruckId };
+    delete next[strandedTruckId];
+    assignmentsByTruckId = next;
+  }
+
+  return { docksById, assignmentsByTruckId };
+}
+
+/**
+ * Applies the assignment row returned by `POST /trucks/:truckId/dock-assignment`.
+ *
+ * Deliberately **not** guarded by `isOlderThanStored`: this is the response to
+ * the very command that caused the change, so it is the newest truth at the
+ * moment it returns. It is also stamped with the timestamp already stored
+ * rather than a client clock — a client running ahead of the server would
+ * otherwise poison the guard and silently drop the next few minutes of genuine
+ * socket events for this truck and door. The `DOCK_ASSIGNED` that follows
+ * carries the real server time and re-applies the same fact.
+ */
+export function applyDockCommandAssignment(
+  state: DockState,
+  assignment: CommandAssignment,
+  dockCode: string,
+  previousDockDoorId: string | null,
+): DockState {
+  const door = state.docksById[assignment.dockDoorId];
+  const existingAssignment = state.assignmentsByTruckId[assignment.truckId];
+
+  let docksById = state.docksById;
+
+  // Only a door already known is updated in place — one never seen before is
+  // left for the next DOCK_STATUS_CHANGED or snapshot to give a real status,
+  // rather than guessing one here.
+  if (door) {
+    docksById = {
+      ...docksById,
+      [assignment.dockDoorId]: {
+        ...door,
+        occupyingTruckId: assignment.truckId,
+        activeAssignmentId: assignment.id,
+      },
+    };
+  }
+
+  // Moving a truck by hand frees the door it came off (docs/api.md: the old row
+  // is CANCELLED and its door released).
+  if (previousDockDoorId && previousDockDoorId !== assignment.dockDoorId) {
+    const previousDoor = docksById[previousDockDoorId];
+    if (previousDoor && previousDoor.occupyingTruckId === assignment.truckId) {
+      docksById = {
+        ...docksById,
+        [previousDockDoorId]: {
+          ...previousDoor,
+          occupyingTruckId: null,
+          activeAssignmentId: null,
+        },
+      };
+    }
+  }
+
+  return {
+    docksById,
+    assignmentsByTruckId: {
+      ...state.assignmentsByTruckId,
+      [assignment.truckId]: {
+        assignmentId: assignment.id,
+        truckId: assignment.truckId,
+        shipmentId: assignment.shipmentId,
+        dockDoorId: assignment.dockDoorId,
+        dockCode,
+        status: assignment.status,
+        score: assignment.score ?? null,
+        reasons: assignment.reasons ?? [],
+        serverTimestamp:
+          existingAssignment?.serverTimestamp ?? door?.updatedAt ?? new Date().toISOString(),
+      },
+    },
+  };
 }

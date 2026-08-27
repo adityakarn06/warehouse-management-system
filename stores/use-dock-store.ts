@@ -1,19 +1,27 @@
 import { create } from "zustand";
 
-import type { DockAssignedPayload, DockReassignedPayload, DockStatusChangedPayload } from "@/types";
+import type {
+  DockAssignedPayload,
+  DockDetail,
+  DockReassignedPayload,
+  DockStatusChangedPayload,
+} from "@/types";
 
 import {
   applyDockAssignment,
+  applyDockCommandAssignment,
+  applyDockCommandStatus,
   applyDockStatus,
   replaceDockSnapshot,
   seedAssignments,
+  type CommandAssignment,
   type DockState,
   type LiveAssignmentEntry,
   type LiveDockEntry,
   type SnapshotAssignment,
 } from "./dock-helpers";
 
-export type { LiveAssignmentEntry, LiveDockEntry, SnapshotAssignment };
+export type { CommandAssignment, LiveAssignmentEntry, LiveDockEntry, SnapshotAssignment };
 
 interface DockActions {
   hydrateFromSnapshot: (docks: LiveDockEntry[]) => void;
@@ -23,6 +31,16 @@ interface DockActions {
   applyStatusChange: (payload: DockStatusChangedPayload) => void;
   applyAssigned: (payload: DockAssignedPayload) => void;
   applyReassigned: (payload: DockReassignedPayload) => void;
+  /** Applies the dock row a status/release command returned, so the board
+   * reflects the backend's decision without waiting for the socket echo.
+   * The matching `DOCK_STATUS_CHANGED` re-applies the same fact harmlessly. */
+  applyStatusCommandResult: (dock: DockDetail) => void;
+  /** Applies the assignment row `POST /dock-assignment` returned. */
+  applyAssignmentCommandResult: (
+    assignment: CommandAssignment,
+    dockCode: string,
+    previousDockDoorId: string | null,
+  ) => void;
   clear: () => void;
 }
 
@@ -44,6 +62,11 @@ export const useDockStore = create<DockStore>()((set) => ({
 
   applyReassigned: (payload) =>
     set((state) => applyDockAssignment(state, payload)),
+
+  applyStatusCommandResult: (dock) => set((state) => applyDockCommandStatus(state, dock)),
+
+  applyAssignmentCommandResult: (assignment, dockCode, previousDockDoorId) =>
+    set((state) => applyDockCommandAssignment(state, assignment, dockCode, previousDockDoorId)),
 
   clear: () => set({ docksById: {}, assignmentsByTruckId: {} }),
 }));

@@ -1,13 +1,21 @@
+"use client";
+
+import { DockOperationsBoard } from "@/components/docks/dock-operations-board";
+import { DockRecommendationPanel } from "@/components/docks/dock-recommendation-panel";
 import { PageShell } from "@/components/layout/page-shell";
-import { DockGridPlaceholder } from "@/components/docks/dock-grid-placeholder";
-import { TruckListPlaceholder } from "@/components/trucks/truck-list-placeholder";
 
 export default function YardPage() {
   return (
-    <PageShell title="Yard" description="Docks and trucks currently on site.">
-      <div className="grid gap-4 md:grid-cols-2">
-        <DockGridPlaceholder />
-        <TruckListPlaceholder />
+    <PageShell title="Yard" description="Dock status and assignment recommendations.">
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <section className="flex flex-col gap-2">
+          <h3 className="text-xs font-medium text-muted-foreground">Dock status</h3>
+          <DockOperationsBoard />
+        </section>
+        <section className="flex flex-col gap-2">
+          <h3 className="text-xs font-medium text-muted-foreground">Dock recommendations</h3>
+          <DockRecommendationPanel />
+        </section>
       </div>
     </PageShell>
   );
