@@ -10,6 +10,11 @@ export const MAX_ALERTS = 200;
 export interface RealtimeAlert extends Alert {
   receivedAt: number;
   isRead: boolean;
+  /** Where this row entered the feed. `isRead` cannot stand in for this — the
+   * operator can mark anything read — and surfaces that mean "this just
+   * happened" (the reassignment panel) must not replay seeded history as if it
+   * were the current cascade. */
+  source: "live" | "snapshot";
 }
 
 export interface AlertState {
@@ -31,6 +36,7 @@ export function alertFromPayload(payload: AlertCreatedPayload, now: number): Rea
     createdAt: payload.createdAt,
     receivedAt: now,
     isRead: false,
+    source: "live",
   };
 }
 
@@ -50,7 +56,7 @@ export function seedAlerts(state: AlertState, alerts: Alert[], now: number): Ale
 
   const seeded: RealtimeAlert[] = alerts
     .filter((alert) => !live.has(alert.id))
-    .map((alert) => ({ ...alert, receivedAt: now, isRead: true }));
+    .map((alert) => ({ ...alert, receivedAt: now, isRead: true, source: "snapshot" as const }));
 
   const merged = [...state.alerts, ...seeded]
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
@@ -69,10 +75,13 @@ export function seedAlerts(state: AlertState, alerts: Alert[], now: number): Ale
 export function prependAlert(state: AlertState, payload: AlertCreatedPayload, now: number): AlertState {
   if (state.alerts.some((alert) => alert.id === payload.alertId)) return state;
 
-  return {
-    alerts: [alertFromPayload(payload, now), ...state.alerts].slice(0, MAX_ALERTS),
-    unreadCount: state.unreadCount + 1,
-  };
+  const alerts = [alertFromPayload(payload, now), ...state.alerts].slice(0, MAX_ALERTS);
+
+  // Recomputed from what survives the cap rather than incremented, exactly as
+  // `seedAlerts` does. Incrementing drifts once the feed is full and the row
+  // pushed off the tail was itself unread — the bell would then show a count
+  // with no unread alert behind it, and its severity lookup would find none.
+  return { alerts, unreadCount: alerts.filter((alert) => !alert.isRead).length };
 }
 
 export function markAlertRead(state: AlertState, alertId: string): AlertState {

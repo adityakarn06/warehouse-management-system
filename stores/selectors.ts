@@ -83,12 +83,25 @@ export const useReassignments = () =>
 export const useAlerts = () => useAlertStore((s) => s.alerts);
 export const useUnreadAlertCount = () => useAlertStore((s) => s.unreadCount);
 
-/** Trucks the cascade left with nowhere to go. There is no `DOCK_REASSIGNED`
- * and no store entry for these — a CRITICAL `NO_DOCK_AVAILABLE` alert is the
- * only record (docs/realtime.md), and no dock is invented to stand in. */
+/**
+ * Trucks *this session's* cascade left with nowhere to go. There is no
+ * `DOCK_REASSIGNED` and no store entry for these — a CRITICAL
+ * `NO_DOCK_AVAILABLE` alert is the only record (docs/realtime.md), and no dock
+ * is invented to stand in.
+ *
+ * Restricted to live-pushed rows on purpose. The feed is seeded from
+ * `GET /alerts?limit=100`, which is newest-first with no time bound, so
+ * without this a board would render every stranding of the past several days
+ * as a red "needs a human now" row. That history belongs on `/alerts`; this
+ * selector answers "what just happened", which is a different question.
+ */
 export const useNoDockAvailableAlerts = () =>
   useAlertStore(
-    useShallow((s) => s.alerts.filter((alert) => alert.type === "NO_DOCK_AVAILABLE")),
+    useShallow((s) =>
+      s.alerts.filter(
+        (alert) => alert.type === "NO_DOCK_AVAILABLE" && alert.source === "live",
+      ),
+    ),
   );
 
 /** Highest severity among unread alerts, for the header bell's tone. */

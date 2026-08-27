@@ -63,10 +63,29 @@ function ReassignmentRow({ entry, now }: { entry: LiveAssignmentEntry; now: numb
   );
 }
 
+/** Reads an exclusion entry in either documented shape; anything else is
+ * dropped rather than guessed at. */
+function exclusionText(entry: unknown): string | null {
+  if (typeof entry === "string") return entry;
+  if (entry && typeof entry === "object") {
+    const { dockCode, reason } = entry as { dockCode?: unknown; reason?: unknown };
+    if (typeof reason !== "string") return null;
+    return typeof dockCode === "string" ? `${dockCode} — ${reason}` : reason;
+  }
+  return null;
+}
+
 function NoDockRow({ alert, now }: { alert: RealtimeAlert; now: number }) {
   // Only the REST-seeded row carries `metadata`; a socket-pushed alert has
   // none, so the exclusions are shown when present and never fabricated.
-  const excluded = Array.isArray(alert.metadata?.excluded) ? alert.metadata.excluded : null;
+  //
+  // Every other `excluded` in the contract is `{ dockId, dockCode, reason }`
+  // (docs/api.md, `excludedDockSchema`), but the alert's own `metadata` is
+  // documented only as "the scorer's exclusion sentences" — so both shapes are
+  // read, rather than stringifying an object into `[object Object]`.
+  const excluded = Array.isArray(alert.metadata?.excluded)
+    ? alert.metadata.excluded.map(exclusionText).filter((text) => text !== null)
+    : null;
 
   return (
     <li className="flex flex-col gap-1 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-[0.65rem]">
@@ -77,11 +96,11 @@ function NoDockRow({ alert, now }: { alert: RealtimeAlert; now: number }) {
 
       <p className="text-destructive">{alert.message}</p>
 
-      {excluded ? (
+      {excluded && excluded.length > 0 ? (
         <ul className="flex flex-col gap-0.5 pt-0.5">
           {excluded.map((sentence, index) => (
             <li key={index} className="text-muted-foreground">
-              — {String(sentence)}
+              — {sentence}
             </li>
           ))}
         </ul>
@@ -94,10 +113,19 @@ function NoDockRow({ alert, now }: { alert: RealtimeAlert; now: number }) {
   );
 }
 
+/** Reassignments accumulate for the whole session — each one is still a true
+ * statement about where its truck sits, but a panel that reads as "what just
+ * happened" should not grow into an unbounded log. The newest few are shown and
+ * the rest are counted; the full record is the alert feed. */
+const VISIBLE_REASSIGNMENTS = 6;
+
 export function ReassignmentPanel() {
   const reassignments = useReassignments();
   const stranded = useNoDockAvailableAlerts();
   const now = useNow();
+
+  const visible = reassignments.slice(0, VISIBLE_REASSIGNMENTS);
+  const olderCount = reassignments.length - visible.length;
 
   if (reassignments.length === 0 && stranded.length === 0) {
     return (
@@ -115,9 +143,15 @@ export function ReassignmentPanel() {
       {stranded.map((alert) => (
         <NoDockRow key={alert.id} alert={alert} now={now} />
       ))}
-      {reassignments.map((entry) => (
+      {visible.map((entry) => (
         <ReassignmentRow key={entry.truckId} entry={entry} now={now} />
       ))}
+      {olderCount > 0 ? (
+        <li className="px-2.5 py-1 text-[0.6rem] text-muted-foreground">
+          + {olderCount} earlier {olderCount === 1 ? "reassignment" : "reassignments"} this session
+          — see Alerts for the full record.
+        </li>
+      ) : null}
     </ul>
   );
 }

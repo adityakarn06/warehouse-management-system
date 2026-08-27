@@ -59,21 +59,37 @@ export default function AlertsPage() {
       (type === null || alert.type === type),
   );
 
-  if (query.isError) {
+  // A failed history fetch must not blank the page: the socket may still be
+  // connected and pushing alerts into the store, which the header bell and the
+  // dashboard feed are already showing. Only fall back to a full error state
+  // when there is genuinely nothing to render.
+  const historyError = query.isError
+    ? query.error instanceof Error
+      ? query.error.message
+      : "Failed to load alert history."
+    : null;
+
+  if (historyError && alerts.length === 0) {
     return (
       <PageShell title="Alerts" description="Everything the backend has raised.">
-        <ErrorState
-          message={
-            query.error instanceof Error ? query.error.message : "Failed to load alert history."
-          }
-          onRetry={() => void query.refetch()}
-        />
+        <ErrorState message={historyError} onRetry={() => void query.refetch()} />
       </PageShell>
     );
   }
 
   return (
     <PageShell title="Alerts" description="Everything the backend has raised.">
+      {historyError ? (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
+          <p className="text-[0.65rem] text-destructive">
+            {historyError} Showing live alerts only.
+          </p>
+          <Button size="xs" variant="outline" onClick={() => void query.refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-xs font-medium text-muted-foreground">Severity</span>
         <Button size="xs" variant={severity === null ? "secondary" : "ghost"} onClick={() => setSeverity(null)}>
@@ -111,7 +127,7 @@ export default function AlertsPage() {
         </Button>
       </div>
 
-      {query.isPending ? (
+      {query.isPending && alerts.length === 0 ? (
         <TableSkeleton rows={8} />
       ) : visible.length === 0 ? (
         <EmptyState

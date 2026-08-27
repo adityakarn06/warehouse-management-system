@@ -134,7 +134,20 @@ export function DockStatusAction({
         {mutation.isPending ? "Working…" : "Make available"}
       </Button>
     ) : (
-      <Button size={size} variant="destructive" className={className} onClick={() => setIsOpen(true)}>
+      <Button
+        size={size}
+        variant="destructive"
+        className={className}
+        onClick={() => {
+          // The same mutation backs "Make available", whose result is never
+          // cleared (that only happens when this dialog closes). Without this
+          // reset, a door put back into service and then taken down again
+          // opens straight onto the *previous* command's cascade report, with
+          // no reason box and no confirm button.
+          mutation.reset();
+          setIsOpen(true);
+        }}
+      >
         Make unavailable
       </Button>
     );

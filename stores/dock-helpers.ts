@@ -90,7 +90,8 @@ export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
 }
 
 /**
- * Fills in doors the store has never seen, leaving every existing entry alone.
+ * Fills in doors the store has never seen, leaving every existing entry's
+ * *status* alone.
  *
  * Unlike `replaceDockSnapshot` this never discards live state, so a second
  * board can seed from its own REST list without clobbering what the dashboard
@@ -99,13 +100,46 @@ export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
  * `occupyingTruckId: null` — accurate about the status it carries, but silently
  * read as "this door is empty" by anything that trusts the live entry over its
  * REST row.
+ *
+ * Skipping every existing door would defeat exactly that purpose: on a fresh
+ * load the operations room is joined while `GET /docks` is still in flight, so
+ * a `DOCK_STATUS_CHANGED` can create the entry *first* and the snapshot would
+ * then decline to fill it. So an entry that claims no occupant — which is what
+ * an event-created one always claims, since the event carries no occupancy at
+ * all — takes the snapshot's occupancy while keeping its own newer status. A
+ * door the store already knows to be occupied is never touched.
  */
 export function mergeDockSnapshot(state: DockState, docks: LiveDockEntry[]): DocksById {
   let docksById = state.docksById;
 
   for (const dock of docks) {
-    if (dock.dockId in docksById) continue;
-    docksById = { ...docksById, [dock.dockId]: dock };
+    const existing = docksById[dock.dockId];
+
+    if (!existing) {
+      docksById = { ...docksById, [dock.dockId]: dock };
+      continue;
+    }
+
+    // Only ever adds an occupant the snapshot reported; never removes one, and
+    // never overwrites the live status, reason or timestamp.
+    //
+    // An `AVAILABLE` door is excluded because its empty occupant is a fact, not
+    // a gap: `applyDockStatus` clears the occupant on exactly that status, so a
+    // snapshot still naming a truck there is simply stale.
+    if (
+      existing.status !== "AVAILABLE" &&
+      existing.occupyingTruckId === null &&
+      dock.occupyingTruckId !== null
+    ) {
+      docksById = {
+        ...docksById,
+        [dock.dockId]: {
+          ...existing,
+          occupyingTruckId: dock.occupyingTruckId,
+          activeAssignmentId: dock.activeAssignmentId,
+        },
+      };
+    }
   }
 
   return docksById;
