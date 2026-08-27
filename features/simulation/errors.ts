@@ -28,3 +28,26 @@ export function delayCommandErrorMessage(error: unknown, reference: string): str
       return error.message || `Could not update ${reference}.`;
   }
 }
+
+/**
+ * Turns a failed start / stop / reset into operator-facing wording. These
+ * endpoints have no domain-level failure of their own — start and stop are
+ * idempotent and reset is valid in either state — so the cases worth naming are
+ * environmental: the backend is unreachable, or it has begun shutting down and
+ * is refusing non-GET requests (docs/api.md §22).
+ */
+export function lifecycleCommandErrorMessage(error: unknown, action: string): string {
+  if (!isApiError(error)) {
+    return error instanceof Error ? error.message : `Could not ${action} the simulation.`;
+  }
+
+  if (error.code === "NETWORK") {
+    return "Could not reach the backend — check the connection and try again.";
+  }
+
+  if (error.status === 503) {
+    return `The backend is shutting down and is no longer accepting commands, so it could not ${action} the simulation.`;
+  }
+
+  return error.message || `Could not ${action} the simulation.`;
+}

@@ -10,9 +10,11 @@ import {
   stopSimulation,
 } from "@/lib/api/simulation";
 import { queryKeys } from "@/lib/api/query-keys";
+import { resubscribeAll } from "@/lib/socket";
 import type { DelayScenario } from "@/schemas/common.schema";
-import type { DelayResult } from "@/schemas/simulation.schema";
+import type { DelayResult, SimulationLifecycle } from "@/schemas/simulation.schema";
 import { useAlertStore } from "@/stores/use-alert-store";
+import { useDockStore } from "@/stores/use-dock-store";
 import { useTruckStore } from "@/stores/use-truck-store";
 
 /**
@@ -31,11 +33,20 @@ function applyDelayCommand(result: DelayResult): void {
   if (result.alert) useAlertStore.getState().pushAlert(result.alert);
 }
 
-function useLifecycleMutation(fn: () => ReturnType<typeof startSimulation>) {
+/**
+ * Every lifecycle command answers with the authoritative post-command loop
+ * state — the exact shape `GET /simulation/status` returns (docs/api.md
+ * §Simulation) — so it is written straight into the status cache rather than
+ * invalidated: re-reading it would be the round-trip the contract already
+ * answered. `/simulation/state` (the per-truck list) *is* invalidated, since the
+ * command may have changed which trucks the loop is advancing.
+ */
+function useLifecycleMutation(fn: () => Promise<SimulationLifecycle>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => {
+    onSuccess: (lifecycle) => {
+      queryClient.setQueryData(queryKeys.simulation.status, lifecycle);
       queryClient.invalidateQueries({ queryKey: queryKeys.simulation.state });
     },
   });
@@ -51,9 +62,47 @@ export function useStopSimulation() {
   return useLifecycleMutation(stopSimulation);
 }
 
-/** Reloads the world from the database, keeping the loop's running/stopped state. */
+/**
+ * Reloads the world from the database, keeping the loop's running/stopped state.
+ *
+ * Reset rewinds every truck to its seeded position, so *everything* the client
+ * holds about the world describes a world that no longer exists. Recovery is
+ * deliberately a full re-hydration from the server rather than a patch:
+ *
+ * 1. The live stores are emptied — including entities the rewind may have
+ *    removed entirely, which no incoming snapshot would ever overwrite.
+ *    `useAlertStore.clear()` also drops its `hasSeeded` latch, which is what
+ *    lets `features/alerts/use-alert-feed.ts` seed a second time.
+ * 2. `resetQueries()` (not `invalidateQueries`) drops every cached REST
+ *    snapshot: the seeding effects in `use-dashboard-snapshot.ts` and
+ *    `use-alert-feed.ts` are keyed on data identity / `generatedAt`, and
+ *    TanStack's structural sharing would hand a refetch back under the old
+ *    reference if the bytes happened to match, leaving those effects unrun.
+ *    The status entry is rewritten afterwards, since it is cleared too.
+ * 3. `resubscribeAll()` re-emits every joined room; each fresh `subscribe:*`
+ *    ack runs `hydrateFromSnapshot` / `applySnapshot`, which is simultaneously
+ *    the re-subscribe, the interpolation re-baseline (`previous*` cleared,
+ *    `target*` pinned to current) and the Zustand write from the new snapshot.
+ *    `sequenceNumber` survives a reset (docs/realtime.md), so nothing in the
+ *    fresh snapshot is dropped as stale. If the socket is down, the stores stay
+ *    empty until the reconnect handler re-subscribes on its own — the same path,
+ *    not a special case.
+ */
 export function useResetSimulation() {
-  return useLifecycleMutation(resetSimulation);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetSimulation,
+    onSuccess: (lifecycle) => {
+      useTruckStore.getState().clear();
+      useDockStore.getState().clear();
+      useAlertStore.getState().clear();
+
+      queryClient.resetQueries();
+      queryClient.setQueryData(queryKeys.simulation.status, lifecycle);
+
+      resubscribeAll();
+    },
+  });
 }
 
 /** The Rain / Traffic / Road Closure buttons — the backend owns speed, ETA,

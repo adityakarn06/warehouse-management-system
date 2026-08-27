@@ -38,6 +38,7 @@ export const queryKeys = {
     overview: ["yard", "overview"] as const,
   },
   simulation: {
+    status: ["simulation", "status"] as const,
     state: ["simulation", "state"] as const,
     truck: (truckId: string) => ["simulation", "truck", truckId] as const,
   },

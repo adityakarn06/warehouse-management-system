@@ -4,6 +4,7 @@ import { TruckIcon } from "lucide-react";
 
 import { AlertBell } from "@/components/alerts/alert-bell";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
+import { SimulationControl } from "@/components/simulation/simulation-control";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -20,7 +21,10 @@ export function DashboardHeader() {
         <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
         <h1 className="text-sm font-medium">Control Tower</h1>
       </div>
+      {/* The simulation control lives in the app shell, so it stays reachable
+          from /yard, /wms and /alerts mid-demo — not just /dashboard. */}
       <div className="flex items-center gap-1">
+        <SimulationControl />
         <AlertBell />
         <ConnectionIndicator />
       </div>

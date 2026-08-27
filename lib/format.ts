@@ -96,3 +96,27 @@ export function formatRelativeTime(iso: string, now: number): string {
   if (minutes < 60) return `${minutes}m ago`;
   return `${Math.round(minutes / 60)}h ago`;
 }
+
+/**
+ * Seconds-resolution age of a server-sent instant ("2s ago", "1m 20s ago").
+ *
+ * `formatRelativeTime`'s coarser buckets are right for a feed row but wrong for
+ * a heartbeat: a simulation loop ticking every 2s and one that wedged 50s ago
+ * both read "just now" there, which is exactly the distinction an operator
+ * opens the control popover to make.
+ */
+export function formatSecondsAgo(iso: string | null | undefined, now: number): string {
+  const date = parseIso(iso);
+  if (!date || now <= 0) return "—";
+
+  const seconds = Math.max(0, Math.round((now - date.getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+
+  const minutes = Math.floor(seconds / 60);
+  const restSeconds = seconds % 60;
+  if (minutes < 60) return restSeconds === 0 ? `${minutes}m ago` : `${minutes}m ${restSeconds}s ago`;
+
+  const hours = Math.floor(minutes / 60);
+  const restMinutes = minutes % 60;
+  return restMinutes === 0 ? `${hours}h ago` : `${hours}h ${restMinutes}m ago`;
+}

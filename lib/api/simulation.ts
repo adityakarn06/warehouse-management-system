@@ -17,6 +17,16 @@ export function resetSimulation() {
   return apiSend("POST", API_ROUTES.simulationReset, simulationLifecycleSchema);
 }
 
+/**
+ * Read-only loop health — `{ running, truckCount, tickMs, lastTickAt,
+ * lastTickError }`. Same shape as the three lifecycle commands, but it mutates
+ * nothing, so a dashboard may poll it, and it keeps answering once shutdown has
+ * started 503ing non-GET requests (docs/api.md §Simulation).
+ */
+export function getSimulationStatus() {
+  return apiGet(API_ROUTES.simulationStatus, simulationLifecycleSchema);
+}
+
 export function getSimulationState() {
   return apiGetList(API_ROUTES.simulationState, simulationTruckSchema);
 }

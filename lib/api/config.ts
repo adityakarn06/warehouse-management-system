@@ -20,6 +20,7 @@ export const API_ROUTES = {
   simulationStart: "/simulation/start",
   simulationStop: "/simulation/stop",
   simulationReset: "/simulation/reset",
+  simulationStatus: "/simulation/status",
   simulationState: "/simulation/state",
   simulationTruck: (truckId: string) => `/simulation/trucks/${truckId}`,
   simulationTruckDelay: (truckId: string) => `/simulation/trucks/${truckId}/delay`,
