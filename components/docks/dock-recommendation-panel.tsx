@@ -72,10 +72,8 @@ export function DockRecommendationPanel() {
   const committed = isAssignmentResult(data) ? data : null;
   const currentDockId = data.currentAssignment?.dockDoorId ?? null;
   const committedCode = committed ? resolveDockCode(committed, committed.assignment.dockDoorId) : null;
-  const previousCode =
-    committed?.previousAssignment
-      ? resolveDockCode(committed, committed.previousAssignment.dockDoorId)
-      : null;
+  // Unlike the assignment row, `previousAssignment` carries its own dock code.
+  const previousCode = committed?.previousAssignment?.dockCode ?? null;
 
   function handleAssign(dockId?: string) {
     if (!truckId) return;

@@ -303,7 +303,8 @@ export function applyDockAssignment(state: DockState, payload: AssignmentFact): 
 export interface CommandAssignment {
   id: string;
   truckId: string;
-  shipmentId: string;
+  /** Null for a truck carrying no shipment — the backend writes the column that way. */
+  shipmentId?: string | null;
   dockDoorId: string;
   status: string;
   score?: number | null;
@@ -431,7 +432,7 @@ export function applyDockCommandAssignment(
       [assignment.truckId]: {
         assignmentId: assignment.id,
         truckId: assignment.truckId,
-        shipmentId: assignment.shipmentId,
+        shipmentId: assignment.shipmentId ?? null,
         dockDoorId: assignment.dockDoorId,
         // Keep whatever real code is already known before giving up. The final
         // fallback to the id is unreachable in practice — the caller has

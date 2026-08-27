@@ -73,6 +73,22 @@ async function requestRaw(path: string, options: RequestOptions = {}): Promise<u
   return json;
 }
 
+/**
+ * A response that parsed as JSON but not as its schema. The Zod issues are the
+ * only thing that says *which* field diverged, and nothing renders
+ * `ApiError.details`, so surface them in development rather than losing them.
+ */
+function validationError(path: string, issues: z.core.$ZodIssue[]): ApiError {
+  if (process.env.NODE_ENV !== "production") {
+    console.error(`[api] response from ${path} did not match the expected shape`, issues);
+  }
+  return new ApiError(`Response from ${path} did not match the expected shape`, {
+    status: 0,
+    code: "VALIDATION",
+    details: issues,
+  });
+}
+
 /** GET (or any single-resource call) that unwraps `{ data }` through `schema`. */
 export async function apiGet<S extends z.ZodTypeAny>(
   path: string,
@@ -82,11 +98,7 @@ export async function apiGet<S extends z.ZodTypeAny>(
   const json = await requestRaw(path, { ...options, method: "GET" });
   const parsed = apiSuccessSchema(schema).safeParse(json);
   if (!parsed.success) {
-    throw new ApiError(`Response from ${path} did not match the expected shape`, {
-      status: 0,
-      code: "VALIDATION",
-      details: parsed.error.issues,
-    });
+    throw validationError(path, parsed.error.issues);
   }
   return (parsed.data as { data: z.infer<S> }).data;
 }
@@ -100,11 +112,7 @@ export async function apiGetList<S extends z.ZodTypeAny>(
   const json = await requestRaw(path, { ...options, method: "GET" });
   const parsed = apiListSuccessSchema(itemSchema).safeParse(json);
   if (!parsed.success) {
-    throw new ApiError(`Response from ${path} did not match the expected shape`, {
-      status: 0,
-      code: "VALIDATION",
-      details: parsed.error.issues,
-    });
+    throw validationError(path, parsed.error.issues);
   }
   return parsed.data;
 }
@@ -121,11 +129,7 @@ export async function apiSend<S extends z.ZodTypeAny>(
   const json = await requestRaw(path, { ...options, method, body });
   const parsed = apiSuccessSchema(schema).safeParse(json);
   if (!parsed.success) {
-    throw new ApiError(`Response from ${path} did not match the expected shape`, {
-      status: 0,
-      code: "VALIDATION",
-      details: parsed.error.issues,
-    });
+    throw validationError(path, parsed.error.issues);
   }
   return (parsed.data as { data: z.infer<S> }).data;
 }

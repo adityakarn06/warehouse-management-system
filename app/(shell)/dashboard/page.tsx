@@ -50,7 +50,7 @@ export default function DashboardPage() {
     <PageShell title="Dashboard" description="Yard-wide overview of trucks, docks, and alerts.">
       <KpiStrip kpis={kpis} isPending={isPending} />
 
-      <div className="grid min-h-[32rem] flex-1 gap-4 lg:min-h-0 lg:grid-cols-[3fr_1fr]">
+      <div className="grid min-h-[32rem] flex-1 gap-4 lg:min-h-0 lg:max-h-[38rem] lg:grid-cols-[3fr_1fr]">
         <LiveMap trucks={overview?.activeTrucks ?? []} />
 
         <div className="flex min-h-0 flex-col gap-4 overflow-hidden rounded-lg border border-border p-3">

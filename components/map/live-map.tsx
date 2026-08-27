@@ -231,7 +231,7 @@ export function LiveMap({
   return (
     <div
       className={cn(
-        "relative flex min-h-96 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20",
+        "relative flex min-h-96 min-w-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20",
         className,
       )}
     >

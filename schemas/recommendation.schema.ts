@@ -74,7 +74,7 @@ export const dockRecommendationsResponseSchema = z.object({
 const assignmentSchema = z.object({
   id: z.string(),
   truckId: z.string(),
-  shipmentId: z.string(),
+  shipmentId: z.string().nullish(),
   dockDoorId: z.string(),
   status: z.string(),
   score: z.number().nullish(),
@@ -83,11 +83,22 @@ const assignmentSchema = z.object({
   scheduledEnd: z.string().nullish(),
 });
 
+/**
+ * `previousAssignment` is deliberately narrower than a full assignment row: the
+ * backend returns only `{ id, dockDoorId, dockCode }` for the row a manual
+ * re-pick superseded (docs/api.md, "Moving a truck by hand").
+ */
+const previousAssignmentSchema = z.object({
+  id: z.string(),
+  dockDoorId: z.string(),
+  dockCode: z.string(),
+});
+
 /** POST /trucks/:truckId/dock-assignment response. */
 export const dockAssignmentResultSchema = dockRecommendationsResponseSchema.extend({
   created: z.boolean(),
   assignment: assignmentSchema,
-  previousAssignment: assignmentSchema.nullish(),
+  previousAssignment: previousAssignmentSchema.nullish(),
 });
 
 export type DockRecommendation = z.infer<typeof dockRecommendationSchema>;
