@@ -18,7 +18,7 @@ import type {
 } from "@/types";
 import type { VariantProps } from "class-variance-authority";
 
-type SemanticTone = "neutral" | "info" | "success" | "warning" | "critical";
+export type SemanticTone = "neutral" | "info" | "success" | "warning" | "critical";
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
 const toneToVariant: Record<SemanticTone, BadgeVariant> = {
@@ -37,7 +37,8 @@ const toneToIcon: Record<SemanticTone, LucideIcon> = {
   critical: AlertTriangleIcon,
 };
 
-const truckStatusTone: Record<TruckStatus, SemanticTone> = {
+/** Exported so non-badge surfaces (map markers) can carry the same semantics. */
+export const truckStatusTone: Record<TruckStatus, SemanticTone> = {
   IN_TRANSIT: "info",
   DELAYED: "critical",
   ARRIVING: "warning",

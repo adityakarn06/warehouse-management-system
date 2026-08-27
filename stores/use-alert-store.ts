@@ -14,20 +14,30 @@ import {
 export type { RealtimeAlert };
 
 interface AlertActions {
-  hydrateFromSnapshot: (alerts: Alert[]) => void;
+  seedFromSnapshot: (alerts: Alert[]) => void;
   pushAlert: (payload: AlertCreatedPayload) => void;
   markRead: (alertId: string) => void;
   markAllRead: () => void;
   clear: () => void;
 }
 
-type AlertStore = AlertState & AlertActions;
+/**
+ * `hasSeeded` lives in the store, not in the seeding component: the store is
+ * a module singleton that outlives any mount, so a per-mount latch would let
+ * a remount replay the REST snapshot over live-pushed alerts, resetting
+ * `isRead`/`unreadCount` on alerts the socket already delivered.
+ */
+type AlertStore = AlertState & { hasSeeded: boolean } & AlertActions;
 
 export const useAlertStore = create<AlertStore>()((set) => ({
   alerts: [],
   unreadCount: 0,
+  hasSeeded: false,
 
-  hydrateFromSnapshot: (alerts) => set(() => hydrateAlerts(alerts, Date.now())),
+  seedFromSnapshot: (alerts) =>
+    set((state) =>
+      state.hasSeeded ? state : { ...hydrateAlerts(alerts, Date.now()), hasSeeded: true },
+    ),
 
   pushAlert: (payload) => set((state) => prependAlert(state, payload, Date.now())),
 
@@ -35,5 +45,5 @@ export const useAlertStore = create<AlertStore>()((set) => ({
 
   markAllRead: () => set((state) => markAllAlertsRead(state)),
 
-  clear: () => set({ alerts: [], unreadCount: 0 }),
+  clear: () => set({ alerts: [], unreadCount: 0, hasSeeded: false }),
 }));

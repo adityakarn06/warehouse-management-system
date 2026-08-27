@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import { useAlertStore, useDockStore, useTruckStore } from "@/stores";
-import type { YardOverview } from "@/types";
+import type { DockStatus, TruckStatus, YardOverview } from "@/types";
 
 export interface DashboardKpis {
   activeTrucks: number;
@@ -23,8 +23,24 @@ export interface DashboardKpis {
  * `dockStatus` string exactly as sent.
  */
 export function useDashboardKpis(overview: YardOverview | undefined): DashboardKpis {
-  const trucksById = useTruckStore(useShallow((s) => s.trucksById));
-  const docksById = useDockStore(useShallow((s) => s.docksById));
+  // Status maps, not the entry maps: a `useShallow` over `trucksById`
+  // compares entry *identities*, and a position tick replaces one entry — so
+  // it would re-render this hook's caller (the whole dashboard, map included)
+  // every 2s for values that only change on a status transition.
+  const truckStatuses = useTruckStore(
+    useShallow((s) => {
+      const statuses: Record<string, TruckStatus> = {};
+      for (const id in s.trucksById) statuses[id] = s.trucksById[id].status;
+      return statuses;
+    }),
+  );
+  const dockStatuses = useDockStore(
+    useShallow((s) => {
+      const statuses: Record<string, DockStatus> = {};
+      for (const id in s.docksById) statuses[id] = s.docksById[id].status;
+      return statuses;
+    }),
+  );
   const alerts = useAlertStore(useShallow((s) => s.alerts));
 
   return useMemo(() => {
@@ -44,7 +60,7 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
     let dockedTrucks = 0;
 
     for (const truck of overview.activeTrucks) {
-      const status = trucksById[truck.id]?.status ?? truck.status;
+      const status = truckStatuses[truck.id] ?? truck.status;
       if (status === "DELAYED") delayedTrucks += 1;
       if (status === "ARRIVING") arrivingTrucks += 1;
       if (status === "DOCKED") dockedTrucks += 1;
@@ -52,17 +68,25 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
 
     let docksAvailable = 0;
     for (const dock of overview.docks) {
-      const status = docksById[dock.id]?.status ?? dock.status;
+      const status = dockStatuses[dock.id] ?? dock.status;
       if (status === "AVAILABLE") docksAvailable += 1;
     }
 
-    // Alerts pushed live that the REST snapshot's (max-20) window doesn't
-    // already contain, and that are still unacknowledged — an exact set
-    // difference against the baseline count, not a guess.
+    // Alerts pushed live *since this snapshot was generated* — the only ones
+    // `summary.unresolvedAlerts` cannot already account for. A plain set
+    // difference against `overview.alerts` would over-count twice over: that
+    // list is capped at 20 (docs/api.md), so an older unacknowledged alert
+    // outside the window is already in the summary; and the store never
+    // updates `acknowledged`, so one acknowledged elsewhere would keep adding
+    // 1 forever. Both are alerts older than `generatedAt`, so the cutoff
+    // excludes them without inventing any state.
     const knownAlertIds = new Set(overview.alerts.map((alert) => alert.id));
+    const snapshotAt = Date.parse(overview.generatedAt);
     let extraUnresolved = 0;
     for (const alert of alerts) {
-      if (!alert.acknowledged && !knownAlertIds.has(alert.id)) extraUnresolved += 1;
+      if (alert.acknowledged || knownAlertIds.has(alert.id)) continue;
+      if (Date.parse(alert.createdAt) <= snapshotAt) continue;
+      extraUnresolved += 1;
     }
 
     return {
@@ -73,5 +97,5 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
       docksAvailable,
       unresolvedAlerts: overview.summary.unresolvedAlerts + extraUnresolved,
     };
-  }, [overview, trucksById, docksById, alerts]);
+  }, [overview, truckStatuses, dockStatuses, alerts]);
 }

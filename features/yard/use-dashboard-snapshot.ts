@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { useOperationsSubscription } from "@/hooks/use-realtime";
 import { useAlertStore, useDockStore, useTruck } from "@/stores";
@@ -21,16 +21,17 @@ import { useYardOverview } from "./queries";
  *
  * The alert store is different: it is (per `stores/alert-helpers.ts`) "the
  * live-pushed feed only, seeded *once* from an initial REST snapshot" — a
- * later debounced refetch (`useSnapshotInvalidation`) must not re-hydrate it,
- * or it would silently reset `unreadCount`/`isRead` on alerts the socket has
- * already delivered and the user may have already read.
+ * later debounced refetch (`useSnapshotInvalidation`), or a remount of this
+ * hook, must not re-hydrate it, or it would silently reset
+ * `unreadCount`/`isRead` on alerts the socket has already delivered and the
+ * user may have already read. `seedFromSnapshot` holds that latch in the
+ * store itself, which is what outlives the mount.
  */
 export function useDashboardSnapshot() {
   const query = useYardOverview();
   useOperationsSubscription();
 
   const generatedAt = query.data?.generatedAt;
-  const hasSeededAlerts = useRef(false);
 
   useEffect(() => {
     if (!query.data) return;
@@ -56,10 +57,7 @@ export function useDashboardSnapshot() {
 
     useDockStore.getState().hydrateFromSnapshot(docks);
 
-    if (!hasSeededAlerts.current) {
-      useAlertStore.getState().hydrateFromSnapshot(data.alerts);
-      hasSeededAlerts.current = true;
-    }
+    useAlertStore.getState().seedFromSnapshot(data.alerts);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedAt]);
 
@@ -105,4 +103,19 @@ export function useLiveTruckFields(truck: YardTruck): LiveTruckFields {
     speedKmph: live.speedKmph,
     activeDelay: live.activeDelay,
   };
+}
+
+/**
+ * Same overlay rule as `useLiveTruckFields`, for the map: the live store's
+ * server-sent `current*` position when the truck is held live, else the REST
+ * row's. `target*`/`previous*` are deliberately not read — they exist for the
+ * render-time interpolation phase, and a lerped coordinate is never
+ * authoritative (AGENTS.md).
+ */
+export function useLiveTruckPosition(truck: YardTruck): { latitude: number; longitude: number } {
+  const live = useTruck(truck.id);
+
+  if (!live) return { latitude: truck.latitude, longitude: truck.longitude };
+
+  return { latitude: live.currentLatitude, longitude: live.currentLongitude };
 }

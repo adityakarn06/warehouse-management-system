@@ -35,15 +35,20 @@ export function useSnapshotInvalidation(): void {
       }, DEBOUNCE_MS);
     };
 
+    // A truck seen for the first time is not a *transition*: at mount the
+    // store is still empty (the `subscribe:operations` ack hasn't landed), so
+    // treating "no previous entry" as a change would fire a redundant refetch
+    // for every truck the first snapshot already reports as terminal.
     let previousTrucks: TrucksById = useTruckStore.getState().trucksById;
     const unsubTrucks = useTruckStore.subscribe((state) => {
       const nextTrucks = state.trucksById;
       for (const truckId in nextTrucks) {
         const prev = previousTrucks[truckId];
+        if (!prev) continue;
         const next = nextTrucks[truckId];
         if (
           MEMBERSHIP_INVALIDATING_STATUSES.has(next.status) &&
-          prev?.status !== next.status
+          prev.status !== next.status
         ) {
           scheduleInvalidate();
           break;

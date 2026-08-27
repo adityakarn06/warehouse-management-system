@@ -1,10 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { AlertFeed } from "@/components/alerts/alert-feed";
 import { DockStatusBoard } from "@/components/docks/dock-status-board";
 import { KpiStrip } from "@/components/dashboard/kpi-strip";
 import { PageShell } from "@/components/layout/page-shell";
-import { MapPlaceholder } from "@/components/map/map-placeholder";
 import { SelectedTruckPanel } from "@/components/trucks/selected-truck-panel";
 import { UpcomingArrivals } from "@/components/trucks/upcoming-arrivals";
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
@@ -15,6 +16,14 @@ import {
   useSnapshotInvalidation,
 } from "@/features/yard";
 import { useSelectedTruckId } from "@/stores";
+
+/** Mapbox GL touches `window` at construction — never initialise it on the server. */
+const LiveMap = dynamic(() => import("@/components/map/live-map").then((mod) => mod.LiveMap), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-80 flex-1 animate-pulse rounded-lg border border-border bg-muted/20" />
+  ),
+});
 
 export default function DashboardPage() {
   const { overview, isPending, isError, error, refetch } = useDashboardSnapshot();
@@ -41,10 +50,10 @@ export default function DashboardPage() {
     <PageShell title="Dashboard" description="Yard-wide overview of trucks, docks, and alerts.">
       <KpiStrip kpis={kpis} isPending={isPending} />
 
-      <div className="grid flex-1 gap-4 lg:grid-cols-[2fr_1fr]">
-        <MapPlaceholder />
+      <div className="grid min-h-[32rem] flex-1 gap-4 lg:min-h-0 lg:grid-cols-[3fr_1fr]">
+        <LiveMap trucks={overview?.activeTrucks ?? []} />
 
-        <div className="flex min-h-0 flex-col gap-4 rounded-lg border border-border p-3">
+        <div className="flex min-h-0 flex-col gap-4 overflow-hidden rounded-lg border border-border p-3">
           {isPending ? (
             <TableSkeleton rows={4} />
           ) : selectedTruck ? (

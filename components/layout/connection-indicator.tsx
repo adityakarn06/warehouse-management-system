@@ -1,8 +1,7 @@
 "use client";
 
-import { useRealtime } from "@/hooks/use-realtime";
 import { cn } from "@/lib/utils";
-import type { ConnectionStatus } from "@/stores";
+import { useConnectionStatus, useRealtimeStore, useSocketId, type ConnectionStatus } from "@/stores";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const statusLabel: Record<ConnectionStatus, string> = {
@@ -24,7 +23,16 @@ const statusDotClass: Record<ConnectionStatus, string> = {
 };
 
 export function ConnectionIndicator() {
-  const { status, socketId, lastConnectedAt, lastError } = useRealtime();
+  // Read the four fields individually rather than through `useRealtime()`:
+  // that hook also subscribes to `lastEventAt`, which every inbound socket
+  // event bumps (a position tick per truck, every 2s). This indicator sits in
+  // the app-shell layout, so the aggregate would re-render the header of every
+  // route several times a second to show a string that only changes on
+  // connect/disconnect.
+  const status = useConnectionStatus();
+  const socketId = useSocketId();
+  const lastConnectedAt = useRealtimeStore((s) => s.lastConnectedAt);
+  const lastError = useRealtimeStore((s) => s.lastError);
 
   return (
     <Tooltip>
