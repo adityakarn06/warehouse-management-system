@@ -3,7 +3,12 @@
  * Validating every tick with a full schema parse is a perf decision left for
  * the socket-integration phase — scaffolding only needs the compile-time shape.
  */
-import type { ActiveDelay, TruckStatus } from "@/schemas/common.schema";
+import type {
+  ActiveDelay,
+  AlertSeverity,
+  AlertType,
+  TruckStatus,
+} from "@/schemas/common.schema";
 
 export interface LiveTruckView {
   truckId: string;
@@ -68,8 +73,12 @@ export interface TruckStatusChangedPayload {
 
 export interface AlertCreatedPayload {
   alertId: string;
-  type: string;
-  severity: "INFO" | "WARNING" | "CRITICAL";
+  /** The server's own five-member union — narrowed here so the feed can switch
+   * on it without a cast. Deliberately no `metadata`: the socket does not send
+   * it (docs/realtime.md), so `metadata.excluded` on a NO_DOCK_AVAILABLE alert
+   * is readable only from the `GET /alerts` row. */
+  type: AlertType;
+  severity: AlertSeverity;
   title: string;
   message: string;
   truckId: string | null;

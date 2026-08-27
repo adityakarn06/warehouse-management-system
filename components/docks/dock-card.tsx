@@ -3,10 +3,16 @@
 import { PackageIcon, TruckIcon } from "lucide-react";
 
 import { DockStatusAction } from "@/components/docks/dock-status-action";
+import { AssignmentStateBadge } from "@/components/ui/assignment-state-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useDock as useLiveDock, useSelectedDockId, useTruck } from "@/stores/selectors";
+import {
+  useAssignmentForTruck,
+  useDock as useLiveDock,
+  useSelectedDockId,
+  useTruck,
+} from "@/stores/selectors";
 import { useUIStore } from "@/stores/use-ui-store";
 import type { DockListItem } from "@/types";
 
@@ -31,6 +37,15 @@ export function DockCard({ dock }: { dock: DockListItem }) {
   const liveTruck = useTruck(occupyingTruckId);
 
   const assignment = restAssignment?.truck.id === occupyingTruckId ? restAssignment : null;
+
+  // Was this truck *moved* here by the failure cascade? Only a DOCK_REASSIGNED
+  // entry carries `previousDockCode`. The `dockDoorId` check keeps a stale
+  // entry — the truck has since moved on again — from labelling the wrong door.
+  const liveAssignment = useAssignmentForTruck(occupyingTruckId);
+  const reassignedFrom =
+    liveAssignment?.previousDockCode !== undefined && liveAssignment.dockDoorId === dock.id
+      ? liveAssignment.previousDockCode
+      : null;
   const truckReference = occupyingTruckId
     ? (liveTruck?.reference ?? assignment?.truck.reference ?? occupyingTruckId)
     : null;
@@ -86,6 +101,12 @@ export function DockCard({ dock }: { dock: DockListItem }) {
               </span>
             ) : null}
           </span>
+          {reassignedFrom ? (
+            <span className="flex items-center gap-1">
+              <AssignmentStateBadge state="REASSIGNED" />
+              <span className="text-muted-foreground">from {reassignedFrom}</span>
+            </span>
+          ) : null}
           {assignment?.shipment ? (
             <span className="flex items-center gap-1 text-muted-foreground">
               <PackageIcon className="size-2.5 shrink-0" />

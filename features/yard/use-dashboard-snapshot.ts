@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 import { useOperationsSubscription } from "@/hooks/use-realtime";
-import { useAlertStore, useDockStore, useTruck } from "@/stores";
+import { useDockStore, useTruck } from "@/stores";
 import type { LiveDockEntry } from "@/stores";
 import type { YardTruck } from "@/types";
 
@@ -19,13 +19,11 @@ import { useYardOverview } from "./queries";
  * rename only: no value is invented, and dock membership stays exactly what
  * the backend returned.
  *
- * The alert store is different: it is (per `stores/alert-helpers.ts`) "the
- * live-pushed feed only, seeded *once* from an initial REST snapshot" — a
- * later debounced refetch (`useSnapshotInvalidation`), or a remount of this
- * hook, must not re-hydrate it, or it would silently reset
- * `unreadCount`/`isRead` on alerts the socket has already delivered and the
- * user may have already read. `seedFromSnapshot` holds that latch in the
- * store itself, which is what outlives the mount.
+ * The alert store is deliberately *not* seeded here. `GET /api/v1/alerts` is
+ * its single snapshot source (`features/alerts/use-alert-feed.ts`, mounted
+ * app-wide), because this overview only runs on `/dashboard` and its `alerts`
+ * array is a trimmed slice. Seeding from both would race two snapshots through
+ * one `hasSeeded` latch and let whichever landed first win arbitrarily.
  */
 export function useDashboardSnapshot() {
   const query = useYardOverview();
@@ -60,8 +58,6 @@ export function useDashboardSnapshot() {
     // `subscribe:operations` acks with trucks only, so the assignment map has
     // no other source for anything assigned before this page loaded.
     useDockStore.getState().seedAssignmentsFromSnapshot(data.activeAssignments, data.generatedAt);
-
-    useAlertStore.getState().seedFromSnapshot(data.alerts);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedAt]);
 

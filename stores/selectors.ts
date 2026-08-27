@@ -61,10 +61,48 @@ export const useDockList = () => useDockStore(useShallow((s) => Object.values(s.
 export const useAssignmentForTruck = (truckId: string | null) =>
   useDockStore((s) => (truckId ? s.assignmentsByTruckId[truckId] : undefined));
 
+/**
+ * Every truck the backend *moved* — the entries `DOCK_REASSIGNED` wrote, which
+ * are exactly the ones carrying a `previousDockCode`. Newest first.
+ *
+ * Driven by the store rather than a command response, so every connected
+ * operator sees the cascade, not only whoever pressed the button. `useShallow`
+ * is required: this builds a new array on every call.
+ */
+export const useReassignments = () =>
+  useDockStore(
+    useShallow((s) =>
+      Object.values(s.assignmentsByTruckId)
+        .filter((assignment) => assignment.previousDockCode !== undefined)
+        .sort((a, b) => b.serverTimestamp.localeCompare(a.serverTimestamp)),
+    ),
+  );
+
 // ---- Alert store ----------------------------------------------------------
 
 export const useAlerts = () => useAlertStore((s) => s.alerts);
 export const useUnreadAlertCount = () => useAlertStore((s) => s.unreadCount);
+
+/** Trucks the cascade left with nowhere to go. There is no `DOCK_REASSIGNED`
+ * and no store entry for these — a CRITICAL `NO_DOCK_AVAILABLE` alert is the
+ * only record (docs/realtime.md), and no dock is invented to stand in. */
+export const useNoDockAvailableAlerts = () =>
+  useAlertStore(
+    useShallow((s) => s.alerts.filter((alert) => alert.type === "NO_DOCK_AVAILABLE")),
+  );
+
+/** Highest severity among unread alerts, for the header bell's tone. */
+export const useHighestUnreadSeverity = () =>
+  useAlertStore((s) => {
+    let highest: "INFO" | "WARNING" | "CRITICAL" | null = null;
+    for (const alert of s.alerts) {
+      if (alert.isRead) continue;
+      if (alert.severity === "CRITICAL") return "CRITICAL";
+      if (alert.severity === "WARNING") highest = "WARNING";
+      else if (highest === null) highest = "INFO";
+    }
+    return highest;
+  });
 
 /** The newest alert naming this truck. The feed is already newest-first and
  * `.find` hands back an existing reference, so this needs no `useShallow`. */

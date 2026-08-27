@@ -2,6 +2,7 @@
 
 import { DockOperationsBoard } from "@/components/docks/dock-operations-board";
 import { DockRecommendationPanel } from "@/components/docks/dock-recommendation-panel";
+import { ReassignmentPanel } from "@/components/docks/reassignment-panel";
 import { PageShell } from "@/components/layout/page-shell";
 import { TruckPicker } from "@/components/trucks/truck-picker";
 
@@ -14,6 +15,12 @@ export default function YardPage() {
           <DockOperationsBoard />
         </section>
         <section className="flex flex-col gap-4">
+          {/* Sits next to the board that triggers it: taking a booked door out
+              of service is what produces these rows. */}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-xs font-medium text-muted-foreground">Reassignments</h3>
+            <ReassignmentPanel />
+          </div>
           <div className="flex flex-col gap-2">
             <h3 className="text-xs font-medium text-muted-foreground">Select a truck</h3>
             <TruckPicker />

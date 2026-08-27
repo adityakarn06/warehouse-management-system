@@ -20,7 +20,7 @@ export interface AlertState {
 export function alertFromPayload(payload: AlertCreatedPayload, now: number): RealtimeAlert {
   return {
     id: payload.alertId,
-    type: payload.type as Alert["type"],
+    type: payload.type,
     severity: payload.severity,
     title: payload.title,
     message: payload.message,

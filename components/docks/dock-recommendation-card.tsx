@@ -3,6 +3,7 @@
 import { CheckIcon, TrophyIcon } from "lucide-react";
 
 import { ScoreBreakdown } from "@/components/docks/score-breakdown";
+import { AssignmentStateBadge } from "@/components/ui/assignment-state-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -50,6 +51,9 @@ export function DockRecommendationCard({
             </span>
             <span className="truncate text-xs font-semibold">{recommendation.dockCode}</span>
             <StatusBadge domain="dock" value={recommendation.status} />
+            {/* Dashed and unfilled, so a ranked door is never mistaken for a
+                committed one. Only the backend commits an assignment. */}
+            <AssignmentStateBadge state="RECOMMENDED" />
           </div>
           <span className="truncate text-[0.65rem] text-muted-foreground">
             {recommendation.dockName} · {recommendation.zone}

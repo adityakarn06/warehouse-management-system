@@ -56,16 +56,21 @@ export default function DashboardPage() {
         <div className="flex min-h-0 flex-col gap-4 overflow-hidden rounded-lg border border-border p-3">
           {isPending ? (
             <TableSkeleton rows={4} />
-          ) : selectedTruck ? (
-            <SelectedTruckPanel truck={selectedTruck} />
           ) : (
             <>
-              <div className="flex flex-col gap-2">
-                <h3 className="text-xs font-medium text-muted-foreground">Upcoming Arrivals</h3>
-                <UpcomingArrivals trucks={overview?.upcomingArrivals ?? []} />
-              </div>
+              {selectedTruck ? (
+                <SelectedTruckPanel truck={selectedTruck} />
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-xs font-medium text-muted-foreground">Upcoming Arrivals</h3>
+                  <UpcomingArrivals trucks={overview?.upcomingArrivals ?? []} />
+                </div>
+              )}
               <div className="h-px bg-border" />
-              <AlertFeed />
+              {/* Selecting a truck used to hide the feed entirely, which meant a
+                  dock takedown's alerts were invisible exactly when an operator
+                  was looking at a truck. The full history is on /alerts. */}
+              <AlertFeed limit={20} />
             </>
           )}
         </div>
