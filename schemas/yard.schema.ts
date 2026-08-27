@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { activeDelaySchema, dockAssignmentStatusSchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema, shipmentStatusSchema, truckStatusSchema } from "./common.schema";
+import { activeDelaySchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema, shipmentStatusSchema, truckStatusSchema } from "./common.schema";
 import { alertSchema } from "./alert.schema";
 import { routeSummarySchema } from "./route.schema";
 
@@ -130,11 +130,16 @@ const dockingQueueEntrySchema = z.object({
   topRecommendation: dockingQueueTopRecommendationSchema.nullable(),
 });
 
-const dockingQueueWindowSchema = z.object({
-  windowStart: z.string().nullable(),
-  windowEnd: z.string().nullable(),
-  entries: z.array(dockingQueueEntrySchema),
-});
+const dockingQueueWindowSchema = z
+  .object({
+    windowStart: z.string().nullable(),
+    windowEnd: z.string().nullable(),
+    entries: z.array(dockingQueueEntrySchema),
+  })
+  .refine(
+    (w) => (w.windowStart === null) === (w.windowEnd === null),
+    { message: "windowStart and windowEnd must both be present or both be null" },
+  );
 
 export const dockingQueueSchema = z.object({
   generatedAt: z.string(),
@@ -165,7 +170,7 @@ const allocationSummaryTotalsSchema = z.object({
 
 const allocationEntrySchema = z.object({
   assignmentId: z.string(),
-  status: dockAssignmentStatusSchema,
+  status: z.literal("ASSIGNED"),
   trailerId: z.string(),
   truckId: z.string(),
   truckReference: z.string(),

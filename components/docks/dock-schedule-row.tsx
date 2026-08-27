@@ -21,9 +21,6 @@ interface DockScheduleRowProps {
 const BAR_CLASS: Record<DockScheduleAssignment["status"], string> = {
   RECOMMENDED: "border border-dashed border-info/50 bg-transparent",
   ASSIGNED: "border border-success/40 bg-success/20",
-  REASSIGNED: "border border-warning/40 bg-warning/20",
-  COMPLETED: "border border-border bg-muted",
-  CANCELLED: "border border-border bg-muted",
 };
 
 function ScheduleBar({

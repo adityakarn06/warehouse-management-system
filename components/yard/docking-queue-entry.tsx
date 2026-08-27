@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useNow } from "@/hooks/use-now";
+import { useReviewTruck } from "@/hooks/use-review-truck";
 import { formatCountdown } from "@/lib/format";
-import { useUIStore } from "@/stores/use-ui-store";
+import { cn } from "@/lib/utils";
 import type { DockingQueueEntry as DockingQueueEntryType } from "@/types";
 
 /**
@@ -19,10 +20,16 @@ import type { DockingQueueEntry as DockingQueueEntryType } from "@/types";
  */
 export function DockingQueueEntry({ entry }: { entry: DockingQueueEntryType }) {
   const now = useNow();
-  const selectTruck = useUIStore((s) => s.selectTruck);
+  const { selectedTruckId, reviewTruck } = useReviewTruck();
+  const isSelected = selectedTruckId === entry.truckId;
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-md border border-border p-2.5">
+    <div
+      className={cn(
+        "flex flex-col gap-1.5 rounded-md border border-border p-2.5",
+        isSelected && "border-primary ring-1 ring-primary/20",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs font-medium">
           {entry.truckReference}
@@ -60,9 +67,10 @@ export function DockingQueueEntry({ entry }: { entry: DockingQueueEntryType }) {
         size="xs"
         variant="outline"
         className="self-start"
-        onClick={() => selectTruck(entry.truckId)}
+        aria-pressed={isSelected}
+        onClick={() => reviewTruck(entry.truckId)}
       >
-        Review
+        {isSelected ? "Reviewing" : "Review"}
       </Button>
     </div>
   );

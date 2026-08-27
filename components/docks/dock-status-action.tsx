@@ -54,6 +54,8 @@ export function DockStatusAction({
   const mutation = useUpdateDockStatus();
   const release = useReleaseDock();
 
+  const anyPending = mutation.isPending || release.isPending;
+
   const failure = mutation.error
     ? dockCommandError(mutation.error, `Could not update ${code}.`)
     : null;
@@ -140,7 +142,7 @@ export function DockStatusAction({
       <Button
         size={size}
         variant="outline"
-        disabled={mutation.isPending}
+        disabled={anyPending}
         className={className}
         onClick={handleMakeAvailable}
       >
@@ -174,7 +176,7 @@ export function DockStatusAction({
     <Button
       size={size}
       variant="outline"
-      disabled={release.isPending}
+      disabled={anyPending}
       className={className}
       onClick={handleRelease}
     >
@@ -248,7 +250,7 @@ export function DockStatusAction({
               <Button
                 size="sm"
                 variant="destructive"
-                disabled={mutation.isPending}
+                disabled={anyPending}
                 onClick={handleConfirm}
               >
                 {mutation.isPending ? "Working…" : "Make unavailable"}

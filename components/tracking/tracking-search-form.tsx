@@ -34,7 +34,7 @@ export function TrackingSearchForm({
         event.preventDefault();
         const parsed = trackingIdentifierInputSchema.safeParse(value);
         if (!parsed.success) {
-          setError(parsed.error.issues[0]?.message ?? "Enter a tracking number, shipment reference or trailer ID.");
+          setError(parsed.error.issues[0]?.message ?? "Enter a tracking number, shipment reference, shipment ID or trailer ID.");
           return;
         }
         setError(null);
@@ -50,8 +50,8 @@ export function TrackingSearchForm({
             setValue(event.target.value);
             if (error) setError(null);
           }}
-          placeholder="E2-TRACK-101, SHP-1001 or TRL-101"
-          aria-label="Tracking number, shipment reference or trailer ID"
+          placeholder="E2-TRACK-101, SHP-1001, shipment ID or TRL-101"
+          aria-label="Tracking number, shipment reference, shipment ID or trailer ID"
           aria-invalid={error !== null}
           aria-describedby={error ? "tracking-number-error" : undefined}
           autoComplete="off"
@@ -71,7 +71,7 @@ export function TrackingSearchForm({
         </p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Enter a tracking number, shipment reference or trailer ID.
+          Enter a tracking number, shipment reference, shipment ID or trailer ID.
         </p>
       )}
     </form>

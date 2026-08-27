@@ -10,7 +10,7 @@ import { WmsScenarioCard, type WmsScenarioMeta } from "@/components/wms/wms-scen
 import { WmsStepList } from "@/components/wms/wms-step-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDashboardSnapshot } from "@/features/yard";
-import { useRunWmsSimulation, wmsCommandError } from "@/features/wms";
+import { useRunWmsSimulation, useSendWmsEvent, wmsCommandError } from "@/features/wms";
 import { notify } from "@/lib/toast";
 import type { WmsScenario, WmsSimulateResult } from "@/types";
 
@@ -74,6 +74,11 @@ export default function WmsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const runSimulation = useRunWmsSimulation();
+  const sendEvent = useSendWmsEvent();
+
+  // Both paths mutate the same shared world — running two at once would
+  // interleave commands against one set of rows.
+  const anyPending = runSimulation.isPending || sendEvent.isPending;
 
   function run(scenario: WmsScenario) {
     setErrorMessage(null);
@@ -100,7 +105,7 @@ export default function WmsPage() {
         </div>
       ) : null}
 
-      <WmsEventComposer />
+      <WmsEventComposer externalPending={anyPending} sendMutation={sendEvent} />
 
       <div className="grid gap-2 lg:grid-cols-3">
         {SCENARIOS.map((meta) => (
@@ -110,7 +115,7 @@ export default function WmsPage() {
             isRunning={runSimulation.isPending && runSimulation.variables === meta.scenario}
             // Every scenario mutates the same shared world — running two at once
             // would interleave two scripts against one set of rows.
-            disabled={runSimulation.isPending}
+            disabled={anyPending}
             onRun={run}
           />
         ))}

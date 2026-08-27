@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { dockAssignmentStatusSchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema } from "./common.schema";
+import { dockStatusSchema, loadTypeSchema, shipmentPrioritySchema } from "./common.schema";
 import { alertSummarySchema, dockAlertSummarySchema } from "./alert.schema";
 
 const dockAssignmentTruckSchema = z.object({
@@ -129,7 +129,7 @@ export const dockReleaseResultSchema = z.object({
  */
 const dockScheduleAssignmentSchema = z.object({
   id: z.string(),
-  status: dockAssignmentStatusSchema,
+  status: z.enum(["RECOMMENDED", "ASSIGNED"]),
   truckId: z.string(),
   truckReference: z.string(),
   trailerId: z.string(),

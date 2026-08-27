@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field-label";
 import { Input } from "@/components/ui/input";
 import { WmsResultDetails } from "@/components/wms/wms-result-details";
-import { useSendWmsEvent } from "@/features/wms";
+import { type useSendWmsEvent } from "@/features/wms";
 import { wmsCommandError } from "@/features/wms/errors";
 import { useNow } from "@/hooks/use-now";
 import { formatSecondsAgo } from "@/lib/format";
@@ -309,18 +309,33 @@ function EventFields({
  * whose sentence is rendered verbatim (AGENTS.md §2: the backend is the
  * source of truth).
  */
-export function WmsEventComposer() {
+export function WmsEventComposer({
+  externalPending,
+  sendMutation,
+}: {
+  /** True when any sibling command (scenario run, etc.) is in flight. */
+  externalPending: boolean;
+  /** The shared mutation returned by `useSendWmsEvent`. */
+  sendMutation: ReturnType<typeof useSendWmsEvent>;
+}) {
   const [eventType, setEventType] = useState<WmsEventType>("TRAILER_LOCATION_UPDATED");
   const [lastResult, setLastResult] = useState<WmsEventResult | null>(null);
   const [lastSentEvent, setLastSentEvent] = useState<WmsEvent | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const send = useSendWmsEvent();
+  const send = sendMutation;
+
+  const pending = send.isPending || externalPending;
 
   function handleSubmit(event: WmsEvent) {
     setErrorMessage(null);
-    setLastSentEvent(event);
+    // Clear the previous result so a failed submission cannot leave
+    // lastSentEvent pointing at the new event while lastResult holds the
+    // previous success.
+    setLastResult(null);
+    setLastSentEvent(null);
     send.mutate(event, {
       onSuccess: (result) => {
+        setLastSentEvent(event);
         setLastResult(result);
         // The same `pushAlert` path every other command uses — `prependAlert`
         // dedupes on the server's `alertId`, so this and the socket's
@@ -364,7 +379,7 @@ export function WmsEventComposer() {
         ))}
       </div>
 
-      <EventFields key={eventType} eventType={eventType} onSubmit={handleSubmit} pending={send.isPending} />
+      <EventFields key={eventType} eventType={eventType} onSubmit={handleSubmit} pending={pending} />
 
       {errorMessage ? (
         <p className="rounded-sm bg-destructive/10 px-2 py-1.5 text-2xs text-destructive">

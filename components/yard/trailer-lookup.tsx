@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,9 @@ export function TrailerLookup() {
   const [status, setStatus] = useState<"idle" | "pending" | "miss">("idle");
   const trucksQuery = useTrucks();
   const selectTruck = useUIStore((s) => s.selectTruck);
+  /** Monotonically increasing counter — guards async getTruck results so only
+   * the latest submission can update state. */
+  const requestSeqRef = useRef(0);
 
   function findLocally(query: string): TruckListItem | null {
     const trucks = trucksQuery.data?.data ?? [];
@@ -52,12 +55,15 @@ export function TrailerLookup() {
       return;
     }
 
+    const seq = ++requestSeqRef.current;
     setStatus("pending");
     try {
       const truck = await getTruck(query);
+      if (requestSeqRef.current !== seq) return; // superseded
       selectTruck(truck.id);
       setStatus("idle");
     } catch {
+      if (requestSeqRef.current !== seq) return; // superseded
       // A 404 ("no such truck/reference/trailer") and any other failure both
       // render as the same inline miss — this is a quick lookup, not a page,
       // and does not warrant a full `ErrorState`.

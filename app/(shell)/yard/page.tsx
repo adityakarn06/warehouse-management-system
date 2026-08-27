@@ -9,6 +9,7 @@ import { TruckPicker } from "@/components/trucks/truck-picker";
 import { AllocationSummaryPanel } from "@/components/yard/allocation-summary-panel";
 import { DockingQueueBoard } from "@/components/yard/docking-queue-board";
 import { TrailerLookup } from "@/components/yard/trailer-lookup";
+import { DOCK_RECOMMENDATIONS_ANCHOR } from "@/hooks/use-review-truck";
 
 export default function YardPage() {
   return (
@@ -30,7 +31,7 @@ export default function YardPage() {
             <TrailerLookup />
             <TruckPicker />
           </div>
-          <div className="flex flex-col gap-2">
+          <div id={DOCK_RECOMMENDATIONS_ANCHOR} className="flex flex-col gap-2 scroll-mt-4">
             <h3 className="text-xs font-medium text-muted-foreground">Dock recommendations</h3>
             <DockRecommendationPanel />
           </div>

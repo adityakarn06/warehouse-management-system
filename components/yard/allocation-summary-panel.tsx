@@ -12,8 +12,9 @@ import { KpiSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAllocationSummary } from "@/features/yard";
+import { useReviewTruck } from "@/hooks/use-review-truck";
 import { formatTime } from "@/lib/format";
-import { useUIStore } from "@/stores/use-ui-store";
+import { cn } from "@/lib/utils";
 import type { DockStatus } from "@/types";
 
 const DOCK_STATUSES: DockStatus[] = ["AVAILABLE", "RESERVED", "OCCUPIED", "UNAVAILABLE"];
@@ -25,7 +26,7 @@ const DOCK_STATUSES: DockStatus[] = ["AVAILABLE", "RESERVED", "OCCUPIED", "UNAVA
  */
 export function AllocationSummaryPanel() {
   const query = useAllocationSummary();
-  const selectTruck = useUIStore((s) => s.selectTruck);
+  const { selectedTruckId, reviewTruck } = useReviewTruck();
 
   if (query.isPending) {
     return (
@@ -129,23 +130,34 @@ export function AllocationSummaryPanel() {
           />
         ) : (
           <div className="flex flex-col gap-1.5">
-            {unallocated.map((truck) => (
-              <div
-                key={truck.truckId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-2xs"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="font-mono">{truck.trailerId}</span>
-                  <span className="font-medium text-foreground">{truck.truckReference}</span>
-                  <StatusBadge domain="truck" value={truck.status} />
-                  <span className="text-muted-foreground">{truck.shipmentReference}</span>
-                  <Badge variant="outline">{truck.priority}</Badge>
-                </span>
-                <Button size="xs" variant="outline" onClick={() => selectTruck(truck.truckId)}>
-                  Review
-                </Button>
-              </div>
-            ))}
+            {unallocated.map((truck) => {
+              const isSelected = selectedTruckId === truck.truckId;
+              return (
+                <div
+                  key={truck.truckId}
+                  className={cn(
+                    "flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-2xs",
+                    isSelected && "border-primary ring-1 ring-primary/20",
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono">{truck.trailerId}</span>
+                    <span className="font-medium text-foreground">{truck.truckReference}</span>
+                    <StatusBadge domain="truck" value={truck.status} />
+                    <span className="text-muted-foreground">{truck.shipmentReference}</span>
+                    <Badge variant="outline">{truck.priority}</Badge>
+                  </span>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    aria-pressed={isSelected}
+                    onClick={() => reviewTruck(truck.truckId)}
+                  >
+                    {isSelected ? "Reviewing" : "Review"}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
