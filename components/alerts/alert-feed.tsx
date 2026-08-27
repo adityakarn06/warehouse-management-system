@@ -1,0 +1,59 @@
+"use client";
+
+import { BellIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { formatRelativeTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { useAlertStore, useAlerts, useUnreadAlertCount } from "@/stores";
+
+export function AlertFeed() {
+  const alerts = useAlerts();
+  const unreadCount = useUnreadAlertCount();
+  const markAllRead = useAlertStore((s) => s.markAllRead);
+  const markRead = useAlertStore((s) => s.markRead);
+
+  return (
+    <div className="flex flex-1 flex-col gap-2 overflow-hidden">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-medium text-muted-foreground">Live Alerts</h3>
+        {unreadCount > 0 ? (
+          <Button size="xs" variant="ghost" onClick={markAllRead}>
+            Mark all read
+          </Button>
+        ) : null}
+      </div>
+      {alerts.length === 0 ? (
+        <EmptyState icon={BellIcon} title="No alerts" description="Live alerts will appear here." />
+      ) : (
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="flex flex-col gap-1 pr-2">
+            {alerts.map((alert) => (
+              <button
+                key={alert.id}
+                type="button"
+                onClick={() => markRead(alert.id)}
+                className={cn(
+                  "flex flex-col gap-1 rounded-md border-l-2 px-2 py-1.5 text-left transition-colors hover:bg-muted/60",
+                  alert.isRead ? "border-l-transparent" : "border-l-primary bg-muted/30",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs font-medium">{alert.title}</span>
+                  <StatusBadge domain="alertSeverity" value={alert.severity} />
+                </div>
+                <p className="text-[0.65rem] text-muted-foreground">{alert.message}</p>
+                <span className="text-[0.6rem] text-muted-foreground">
+                  {formatRelativeTime(alert.createdAt)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
