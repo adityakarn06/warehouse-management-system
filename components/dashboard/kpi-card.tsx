@@ -1,31 +1,35 @@
+import type { LucideIcon } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export type KpiTone = "neutral" | "info" | "success" | "warning" | "critical";
 
-const toneToTextClass: Record<KpiTone, string> = {
-  neutral: "text-foreground",
-  info: "text-info",
-  success: "text-success",
-  warning: "text-warning",
-  critical: "text-destructive",
+const toneToBorderClass: Record<KpiTone, string> = {
+  neutral: "border-l-border",
+  info: "border-l-info",
+  success: "border-l-success",
+  warning: "border-l-warning",
+  critical: "border-l-destructive",
 };
 
 interface KpiCardProps {
+  icon?: LucideIcon;
   label: string;
   value: number;
   tone?: KpiTone;
   hint?: string;
 }
 
-export function KpiCard({ label, value, tone = "neutral", hint }: KpiCardProps) {
+export function KpiCard({ icon: Icon, label, value, tone = "neutral", hint }: KpiCardProps) {
   return (
-    <Card size="sm">
+    <Card size="sm" className={cn("border-l-2", toneToBorderClass[tone])}>
       <CardContent className="flex flex-col gap-1">
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className={cn("text-xl tabular-nums", toneToTextClass[tone])}>
-          {value}
-        </CardTitle>
+        <div className="flex items-center gap-1.5">
+          {Icon ? <Icon className="size-3.5 text-muted-foreground" /> : null}
+          <CardDescription>{label}</CardDescription>
+        </div>
+        <CardTitle className="text-xl tabular-nums">{value}</CardTitle>
         {hint ? <span className="text-2xs text-muted-foreground">{hint}</span> : null}
       </CardContent>
     </Card>

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { useAlertStore, useDockStore, useTruckStore } from "@/stores";
+import { useDockStore, useTruckStore } from "@/stores";
 import type { DockStatus, TruckStatus, YardOverview } from "@/types";
 
 export interface DashboardKpis {
@@ -12,7 +12,6 @@ export interface DashboardKpis {
   arrivingTrucks: number;
   dockedTrucks: number;
   docksAvailable: number;
-  unresolvedAlerts: number;
 }
 
 /**
@@ -41,7 +40,6 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
       return statuses;
     }),
   );
-  const alerts = useAlertStore(useShallow((s) => s.alerts));
 
   return useMemo(() => {
     if (!overview) {
@@ -51,7 +49,6 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
         arrivingTrucks: 0,
         dockedTrucks: 0,
         docksAvailable: 0,
-        unresolvedAlerts: 0,
       };
     }
 
@@ -72,30 +69,12 @@ export function useDashboardKpis(overview: YardOverview | undefined): DashboardK
       if (status === "AVAILABLE") docksAvailable += 1;
     }
 
-    // Alerts pushed live *since this snapshot was generated* — the only ones
-    // `summary.unresolvedAlerts` cannot already account for. A plain set
-    // difference against `overview.alerts` would over-count twice over: that
-    // list is capped at 20 (docs/api.md), so an older unacknowledged alert
-    // outside the window is already in the summary; and the store never
-    // updates `acknowledged`, so one acknowledged elsewhere would keep adding
-    // 1 forever. Both are alerts older than `generatedAt`, so the cutoff
-    // excludes them without inventing any state.
-    const knownAlertIds = new Set(overview.alerts.map((alert) => alert.id));
-    const snapshotAt = Date.parse(overview.generatedAt);
-    let extraUnresolved = 0;
-    for (const alert of alerts) {
-      if (alert.acknowledged || knownAlertIds.has(alert.id)) continue;
-      if (Date.parse(alert.createdAt) <= snapshotAt) continue;
-      extraUnresolved += 1;
-    }
-
     return {
       activeTrucks: overview.activeTrucks.length,
       delayedTrucks,
       arrivingTrucks,
       dockedTrucks,
       docksAvailable,
-      unresolvedAlerts: overview.summary.unresolvedAlerts + extraUnresolved,
     };
-  }, [overview, truckStatuses, dockStatuses, alerts]);
+  }, [overview, truckStatuses, dockStatuses]);
 }
