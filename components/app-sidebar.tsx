@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { BellIcon, LayoutDashboardIcon, SearchIcon, WarehouseIcon, TruckIcon } from "lucide-react";
+import {
+  BellIcon,
+  LayoutDashboardIcon,
+  RadioIcon,
+  SearchIcon,
+  WarehouseIcon,
+  TruckIcon,
+} from "lucide-react";
 
 import { NavMain, type NavMainItem } from "@/components/nav-main";
 import {
@@ -19,6 +26,7 @@ const navMain: NavMainItem[] = [
   { title: "Track", url: "/track", icon: SearchIcon },
   { title: "Yard", url: "/yard", icon: WarehouseIcon },
   { title: "Alerts", url: "/alerts", icon: BellIcon },
+  { title: "WMS Feed", url: "/wms", icon: RadioIcon },
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
