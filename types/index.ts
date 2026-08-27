@@ -9,3 +9,4 @@ export * from "./simulation";
 export * from "./wms";
 export * from "./api";
 export * from "./realtime";
+export * from "./map";

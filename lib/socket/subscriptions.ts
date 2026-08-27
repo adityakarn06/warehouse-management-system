@@ -45,6 +45,7 @@ function emitUnsubscribe(entry: RegistryEntry): void {
   } else if (entry.kind === "truck" && entry.arg) {
     getSocket().emit("unsubscribe:truck", { truckId: entry.arg }, () => {});
   } else if (entry.kind === "shipment" && entry.arg) {
+    useRealtimeStore.getState().clearShipmentResolution(entry.arg);
     getSocket().emit("unsubscribe:shipment", { shipmentId: entry.arg }, () => {});
   }
 }
@@ -53,7 +54,7 @@ function applyAck<T>(
   key: string,
   entry: RegistryEntry,
   res: SubscribeAck<T>,
-  onOk: (data: T) => void,
+  onOk: (data: T, room: string) => void,
 ): void {
   // The last consumer released this subscription while the ack was still in
   // flight — the room was only just joined server-side and nothing wants it
@@ -69,8 +70,12 @@ function applyAck<T>(
 
   if (res.ok) {
     entry.room = res.room;
+    // A previous ack's failure ("Shipment X was not found") is a lookup miss,
+    // not a connection fault, and would otherwise sit in the connection
+    // indicator forever. A successful ack is proof the socket is fine.
+    useRealtimeStore.getState().setError(null);
     useRealtimeStore.getState().addSubscribedRoom(res.room);
-    onOk(res.data);
+    onOk(res.data, res.room);
   } else {
     useRealtimeStore.getState().setError(res.error);
   }
@@ -88,9 +93,24 @@ function emitSubscribeTruck(key: string, entry: RegistryEntry, truckId: string):
   });
 }
 
+/**
+ * The one subscribe whose ack carries more than a truck snapshot. The caller
+ * may have asked with a tracking number or a reference, and only `res.room`
+ * plus `data.shipmentId` / `data.truck.truckId` say what that resolved to —
+ * `GET /tracking/:trackingNumber` returns no truck id, so this is the sole
+ * authoritative link from what the customer typed to the live truck entry.
+ * Recorded under the *requested* arg, which is what a consumer holds.
+ */
 function emitSubscribeShipment(key: string, entry: RegistryEntry, shipmentId: string): void {
   getSocket().emit("subscribe:shipment", { shipmentId }, (res) => {
-    applyAck(key, entry, res, (snapshot) => {
+    applyAck(key, entry, res, (snapshot, room) => {
+      // Ordered before the store write so a component reading both in one
+      // render pass never sees the truck without the id that points at it.
+      useRealtimeStore.getState().recordShipmentResolution(shipmentId, {
+        room,
+        shipmentId: snapshot.shipmentId,
+        truckId: snapshot.truck?.truckId ?? null,
+      });
       if (snapshot.truck) useTruckStore.getState().applySnapshot(snapshot.truck);
     });
   });

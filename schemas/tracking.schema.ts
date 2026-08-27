@@ -52,3 +52,21 @@ export const trackingResultSchema = z.object({
 });
 
 export type TrackingResult = z.infer<typeof trackingResultSchema>;
+
+/**
+ * What a customer may type into the lookup. `GET /api/v1/tracking/:trackingNumber`
+ * takes the tracking number specifically — not the shipment reference or id
+ * that `subscribe:shipment` also accepts — so this is deliberately narrow, and
+ * a well-formed miss is left to the backend's 404 rather than guessed at here.
+ */
+export const TRACKING_NUMBER_PATTERN = /^E2-TRACK-\d+$/;
+
+export const trackingNumberInputSchema = z
+  .string()
+  .trim()
+  // zod v4 has no `.toUpperCase()` string method; casing is normalised in a
+  // transform so `e2-track-101` reaches the API — and the URL — canonically.
+  .transform((value) => value.toUpperCase())
+  .refine((value) => TRACKING_NUMBER_PATTERN.test(value), {
+    message: "Enter a tracking number like E2-TRACK-101.",
+  });

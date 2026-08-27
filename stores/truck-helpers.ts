@@ -17,6 +17,11 @@ export interface LiveTruckEntry {
   truckId: string;
   reference: string;
   shipmentId: string | null;
+  /** Server-sent route the truck is running. Only the `subscribe:*` snapshot
+   * carries it — the live payloads do not — so it is `null` for a truck first
+   * seen through a position tick, and preserved from the existing entry
+   * thereafter. The map needs it to draw the route corridor. */
+  routeId: string | null;
   status: TruckStatus;
   activeDelay: ActiveDelay;
   currentLatitude: number;
@@ -60,6 +65,7 @@ export function truckEntryFromSnapshot(view: LiveTruckView, now: number): LiveTr
     truckId: view.truckId,
     reference: view.reference,
     shipmentId: view.shipmentId,
+    routeId: view.routeId,
     status: view.status,
     activeDelay: view.activeDelay,
     currentLatitude: view.latitude,
@@ -118,6 +124,7 @@ export function acceptTruckPosition(
       truckId: payload.truckId,
       reference: payload.reference,
       shipmentId: payload.shipmentId,
+      routeId: existing?.routeId ?? null,
       status: payload.status,
       activeDelay: existing?.activeDelay ?? "NORMAL",
       currentLatitude: payload.latitude,

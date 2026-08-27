@@ -17,7 +17,7 @@ import { useMapboxMap } from "@/hooks/use-mapbox-map";
 import { useTruckInterpolator } from "@/hooks/use-truck-interpolator";
 import { cn } from "@/lib/utils";
 import { useSelectedTruckId, useTruckStore, useUIStore } from "@/stores";
-import type { YardTruck } from "@/types";
+import type { MapTruck } from "@/types";
 
 import { TruckInterpolatorProvider } from "./interpolator-context";
 import { MapControls } from "./map-controls";
@@ -35,15 +35,32 @@ function endpointKey(latitude: number, longitude: number) {
  * Resolves a truck's position at *call* time rather than through a render
  * dependency, so the camera effects never re-run on a 2s position tick.
  */
-function currentPositionOf(truck: YardTruck): [number, number] {
+function currentPositionOf(truck: MapTruck): [number, number] {
   const live = useTruckStore.getState().trucksById[truck.id];
   return live
     ? [live.currentLongitude, live.currentLatitude]
     : [truck.longitude, truck.latitude];
 }
 
-export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?: string }) {
-  const { containerRef, map } = useMapboxMap();
+interface LiveMapProps {
+  trucks: MapTruck[];
+  className?: string;
+  /** The fit/locate buttons. Off for a single-shipment view, where "fit the
+   * fleet" and "locate the selection" are the same one truck. */
+  showControls?: boolean;
+  /** Whether this map shares the operations map's remembered viewport. Off for
+   * a single-shipment view: it must open fitted to its own truck, and must not
+   * overwrite where the operator left the yard. */
+  persistViewport?: boolean;
+}
+
+export function LiveMap({
+  trucks,
+  className,
+  showControls = true,
+  persistViewport = true,
+}: LiveMapProps) {
+  const { containerRef, map } = useMapboxMap({ persistViewport });
   const selectedTruckId = useSelectedTruckId();
 
   // Drives the truck markers' `setLngLat` from its own rAF loop, fed straight
@@ -163,7 +180,8 @@ export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?
   useEffect(() => {
     if (!map || hasFitRef.current) return;
 
-    if (useUIStore.getState().mapViewState) {
+    // Only a map that *shares* the remembered viewport should defer to it.
+    if (persistViewport && useUIStore.getState().mapViewState) {
       hasFitRef.current = true;
       return;
     }
@@ -174,7 +192,7 @@ export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?
 
     hasFitRef.current = true;
     map.fitBounds(bounds, { padding: FIT_BOUNDS_PADDING, maxZoom: FIT_BOUNDS_MAX_ZOOM, duration: 0 });
-  }, [map, fleetBounds, routesSettled]);
+  }, [map, fleetBounds, routesSettled, persistViewport]);
 
   // 2. User selects a truck — fires on identity change only, never on the
   //    position ticks that follow it.
@@ -238,11 +256,13 @@ export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?
             <TruckMarker key={truck.id} truck={truck} />
           ))}
 
-          <MapControls
-            onFitFleet={fitFleet}
-            onLocateSelected={() => selectedTruckId && focusTruck(selectedTruckId)}
-            canLocateSelected={Boolean(selectedTruckId)}
-          />
+          {showControls && (
+            <MapControls
+              onFitFleet={fitFleet}
+              onLocateSelected={() => selectedTruckId && focusTruck(selectedTruckId)}
+              canLocateSelected={Boolean(selectedTruckId)}
+            />
+          )}
         </TruckInterpolatorProvider>
       </MapProvider>
     </div>

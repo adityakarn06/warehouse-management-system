@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useOperationsSubscription } from "@/hooks/use-realtime";
 import { useDockStore, useTruck } from "@/stores";
 import type { LiveDockEntry } from "@/stores";
-import type { YardTruck } from "@/types";
+import type { MapTruck } from "@/types";
 
 import { useYardOverview } from "./queries";
 
@@ -71,11 +71,11 @@ export function useDashboardSnapshot() {
 }
 
 export interface LiveTruckFields {
-  status: YardTruck["status"];
-  eta: YardTruck["eta"];
+  status: MapTruck["status"];
+  eta: string | null;
   progress: number;
   speedKmph: number;
-  activeDelay: YardTruck["activeDelay"];
+  activeDelay: MapTruck["activeDelay"];
 }
 
 /**
@@ -83,7 +83,7 @@ export interface LiveTruckFields {
  * over the REST row's, falling back to REST when the truck isn't (yet) held
  * live. Never derives a value neither side actually sent.
  */
-export function useLiveTruckFields(truck: YardTruck): LiveTruckFields {
+export function useLiveTruckFields(truck: MapTruck): LiveTruckFields {
   const live = useTruck(truck.id);
 
   if (!live) {

@@ -36,6 +36,14 @@ export const useSocketId = () => useRealtimeStore((s) => s.socketId);
 export const useLastEventAt = () => useRealtimeStore((s) => s.lastEventAt);
 export const useSubscribedRooms = () => useRealtimeStore(useShallow((s) => s.subscribedRooms));
 
+/**
+ * What the `subscribe:shipment` ack resolved a tracking number / reference /
+ * id into — `undefined` until the ack lands. Keyed by the argument that was
+ * subscribed with. Returns the stored object reference, so no `useShallow`.
+ */
+export const useShipmentResolution = (requestedArg: string | null | undefined) =>
+  useRealtimeStore((s) => (requestedArg ? s.shipmentResolutions[requestedArg] : undefined));
+
 // ---- Truck store ----------------------------------------------------------
 
 /** One truck's live entry — re-renders only when *this* truck's tick lands. */

@@ -27,8 +27,15 @@ interface UseMapboxMapResult {
  * Camera movement is deliberately *not* handled here — see the three-effect
  * policy in `components/map/live-map.tsx`. This hook only records where the
  * user left the viewport, into the UI store fields already reserved for it.
+ *
+ * `persistViewport` opts out of that single shared slot. It exists for maps
+ * that are not the operations map: a single-shipment view must not open at
+ * wherever the fleet map was left, nor overwrite it on pan — one truck's
+ * viewport is not where the operator wants the yard when they go back.
  */
-export function useMapboxMap(): UseMapboxMapResult {
+export function useMapboxMap({
+  persistViewport = true,
+}: { persistViewport?: boolean } = {}): UseMapboxMapResult {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -41,7 +48,7 @@ export function useMapboxMap(): UseMapboxMapResult {
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const restored = useUIStore.getState().mapViewState;
+    const restored = persistViewport ? useUIStore.getState().mapViewState : null;
     const instance = new mapboxgl.Map({
       container,
       style: MAP_STYLE_URL,
@@ -57,12 +64,14 @@ export function useMapboxMap(): UseMapboxMapResult {
     const handleLoad = () => setMap(instance);
     const handleMoveStart = () => useUIStore.getState().setMapInteracting(true);
     const handleMoveEnd = () => {
-      const center = instance.getCenter();
-      useUIStore.getState().setMapViewState({
-        longitude: center.lng,
-        latitude: center.lat,
-        zoom: instance.getZoom(),
-      });
+      if (persistViewport) {
+        const center = instance.getCenter();
+        useUIStore.getState().setMapViewState({
+          longitude: center.lng,
+          latitude: center.lat,
+          zoom: instance.getZoom(),
+        });
+      }
       useUIStore.getState().setMapInteracting(false);
     };
 
@@ -82,7 +91,7 @@ export function useMapboxMap(): UseMapboxMapResult {
       setMap(null);
       instance.remove();
     };
-  }, []);
+  }, [persistViewport]);
 
   return { containerRef, map };
 }

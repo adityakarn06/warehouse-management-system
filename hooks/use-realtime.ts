@@ -4,9 +4,11 @@ import { connectSocket, disconnectSocket, reconnectSocket, subscribeOperations, 
 import {
   useConnectionStatus,
   useLastEventAt,
+  useShipmentResolution,
   useSocketId,
   useSubscribedRooms,
 } from "@/stores/selectors";
+import type { ShipmentResolution } from "@/stores/use-realtime-store";
 import { useRealtimeStore } from "@/stores/use-realtime-store";
 
 /** Connection status + controls. Does not itself join any room. */
@@ -51,4 +53,21 @@ export function useShipmentSubscription(shipmentId: string | null | undefined): 
     if (!shipmentId) return;
     return subscribeShipment(shipmentId);
   }, [shipmentId]);
+}
+
+/**
+ * Joins `shipment:{id}` and hands back what the ack resolved the argument
+ * into — the canonical room, shipment id and, crucially, the `truckId`.
+ *
+ * `GET /tracking/:trackingNumber` carries no truck id (its `trailerId` is a
+ * trailer, not a truck), so this is the only way a tracking page can find the
+ * live entry the map and the status overlay read. `undefined` until the ack
+ * lands, and again after a reconnect drops the room, until the automatic
+ * re-subscribe re-records it.
+ */
+export function useShipmentTracking(
+  shipmentId: string | null | undefined,
+): ShipmentResolution | undefined {
+  useShipmentSubscription(shipmentId);
+  return useShipmentResolution(shipmentId);
 }

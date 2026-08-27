@@ -11,7 +11,7 @@ import { useNow } from "@/hooks/use-now";
 import { formatCountdown } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useTruckStore, useUIStore } from "@/stores";
-import type { YardTruck } from "@/types";
+import type { MapTruck } from "@/types";
 
 import { useMapInterpolator } from "./interpolator-context";
 import { useMapInstance } from "./map-context";
@@ -26,7 +26,7 @@ const toneDotClass: Record<SemanticTone, string> = {
 };
 
 
-export function TruckMarker({ truck }: { truck: YardTruck }) {
+export function TruckMarker({ truck }: { truck: MapTruck }) {
   const map = useMapInstance();
   const interpolator = useMapInterpolator();
   const live = useLiveTruckFields(truck);
