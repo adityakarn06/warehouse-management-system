@@ -34,9 +34,29 @@ export function alertFromPayload(payload: AlertCreatedPayload, now: number): Rea
   };
 }
 
-export function hydrateAlerts(alerts: Alert[], now: number): AlertState {
-  const hydrated = alerts.map((alert) => ({ ...alert, receivedAt: now, isRead: true }));
-  return { alerts: hydrated.slice(0, MAX_ALERTS), unreadCount: 0 };
+/**
+ * Seeds the feed from the initial REST snapshot, *underneath* anything the
+ * socket already pushed.
+ *
+ * `RealtimeProvider` connects while `GET /yard/overview` is still in flight,
+ * so an `ALERT_CREATED` can land before the snapshot does. Replacing the array
+ * outright would drop that alert or bring it back marked read, and would reset
+ * `unreadCount` to 0 — the badge would silently miss an alert the user was
+ * never shown. Live entries therefore win on id, snapshot rows fill in the
+ * rest, and the count is recomputed from what actually survives the cap.
+ */
+export function seedAlerts(state: AlertState, alerts: Alert[], now: number): AlertState {
+  const live = new Set(state.alerts.map((alert) => alert.id));
+
+  const seeded: RealtimeAlert[] = alerts
+    .filter((alert) => !live.has(alert.id))
+    .map((alert) => ({ ...alert, receivedAt: now, isRead: true }));
+
+  const merged = [...state.alerts, ...seeded]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, MAX_ALERTS);
+
+  return { alerts: merged, unreadCount: merged.filter((alert) => !alert.isRead).length };
 }
 
 export function prependAlert(state: AlertState, payload: AlertCreatedPayload, now: number): AlertState {

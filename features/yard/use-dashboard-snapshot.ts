@@ -56,6 +56,9 @@ export function useDashboardSnapshot() {
     });
 
     useDockStore.getState().hydrateFromSnapshot(docks);
+    // `subscribe:operations` acks with trucks only, so the assignment map has
+    // no other source for anything assigned before this page loaded.
+    useDockStore.getState().seedAssignmentsFromSnapshot(data.activeAssignments, data.generatedAt);
 
     useAlertStore.getState().seedFromSnapshot(data.alerts);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,19 +106,4 @@ export function useLiveTruckFields(truck: YardTruck): LiveTruckFields {
     speedKmph: live.speedKmph,
     activeDelay: live.activeDelay,
   };
-}
-
-/**
- * Same overlay rule as `useLiveTruckFields`, for the map: the live store's
- * server-sent `current*` position when the truck is held live, else the REST
- * row's. `target*`/`previous*` are deliberately not read — they exist for the
- * render-time interpolation phase, and a lerped coordinate is never
- * authoritative (AGENTS.md).
- */
-export function useLiveTruckPosition(truck: YardTruck): { latitude: number; longitude: number } {
-  const live = useTruck(truck.id);
-
-  if (!live) return { latitude: truck.latitude, longitude: truck.longitude };
-
-  return { latitude: live.currentLatitude, longitude: live.currentLongitude };
 }

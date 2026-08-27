@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useNow } from "@/hooks/use-now";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAlertStore, useAlerts, useUnreadAlertCount } from "@/stores";
 
 export function AlertFeed() {
   const alerts = useAlerts();
+  const now = useNow();
   const unreadCount = useUnreadAlertCount();
   const markAllRead = useAlertStore((s) => s.markAllRead);
   const markRead = useAlertStore((s) => s.markRead);
@@ -47,7 +49,7 @@ export function AlertFeed() {
                 </div>
                 <p className="text-[0.65rem] text-muted-foreground">{alert.message}</p>
                 <span className="text-[0.6rem] text-muted-foreground">
-                  {formatRelativeTime(alert.createdAt)}
+                  {formatRelativeTime(alert.createdAt, now)}
                 </span>
               </button>
             ))}

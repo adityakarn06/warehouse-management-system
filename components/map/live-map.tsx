@@ -14,10 +14,12 @@ import {
   MAPBOX_TOKEN,
 } from "@/lib/mapbox/config";
 import { useMapboxMap } from "@/hooks/use-mapbox-map";
+import { useTruckInterpolator } from "@/hooks/use-truck-interpolator";
 import { cn } from "@/lib/utils";
 import { useSelectedTruckId, useTruckStore, useUIStore } from "@/stores";
 import type { YardTruck } from "@/types";
 
+import { TruckInterpolatorProvider } from "./interpolator-context";
 import { MapControls } from "./map-controls";
 import { MapProvider } from "./map-context";
 import { RouteLine } from "./route-line";
@@ -43,6 +45,11 @@ function currentPositionOf(truck: YardTruck): [number, number] {
 export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?: string }) {
   const { containerRef, map } = useMapboxMap();
   const selectedTruckId = useSelectedTruckId();
+
+  // Drives the truck markers' `setLngLat` from its own rAF loop, fed straight
+  // from the truck store. It re-renders nothing — the camera policy below is
+  // unaffected by it, and still reads *authoritative* positions only.
+  const interpolator = useTruckInterpolator();
 
   const routeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -218,23 +225,25 @@ export function LiveMap({ trucks, className }: { trucks: YardTruck[]; className?
       <div ref={containerRef} className="min-w-0 flex-1" />
 
       <MapProvider value={map}>
-        {routes.map((route) => (
-          <RouteLine key={route.id} routeId={route.id} isSelected={route.id === selectedRouteId} />
-        ))}
+        <TruckInterpolatorProvider value={interpolator}>
+          {routes.map((route) => (
+            <RouteLine key={route.id} routeId={route.id} isSelected={route.id === selectedRouteId} />
+          ))}
 
-        {endpoints.map(({ key, ...endpoint }) => (
-          <WarehouseMarker key={key} {...endpoint} />
-        ))}
+          {endpoints.map(({ key, ...endpoint }) => (
+            <WarehouseMarker key={key} {...endpoint} />
+          ))}
 
-        {trucks.map((truck) => (
-          <TruckMarker key={truck.id} truck={truck} />
-        ))}
+          {trucks.map((truck) => (
+            <TruckMarker key={truck.id} truck={truck} />
+          ))}
 
-        <MapControls
-          onFitFleet={fitFleet}
-          onLocateSelected={() => selectedTruckId && focusTruck(selectedTruckId)}
-          canLocateSelected={Boolean(selectedTruckId)}
-        />
+          <MapControls
+            onFitFleet={fitFleet}
+            onLocateSelected={() => selectedTruckId && focusTruck(selectedTruckId)}
+            canLocateSelected={Boolean(selectedTruckId)}
+          />
+        </TruckInterpolatorProvider>
       </MapProvider>
     </div>
   );

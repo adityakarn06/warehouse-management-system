@@ -5,12 +5,14 @@ import { ClockIcon } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useLiveTruckFields } from "@/features/yard";
-import { formatTime } from "@/lib/format";
+import { useNow } from "@/hooks/use-now";
+import { formatCountdown, formatTime } from "@/lib/format";
 import { useUIStore } from "@/stores";
 import type { YardTruck } from "@/types";
 
 function ArrivalRow({ truck }: { truck: YardTruck }) {
   const live = useLiveTruckFields(truck);
+  const now = useNow();
   const selectTruck = useUIStore((s) => s.selectTruck);
 
   return (
@@ -30,7 +32,14 @@ function ArrivalRow({ truck }: { truck: YardTruck }) {
         </span>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-0.5">
-        <span className="text-xs tabular-nums">{formatTime(live.eta)}</span>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xs tabular-nums">{formatTime(live.eta)}</span>
+          {/* The arrival instant only moves when the backend re-estimates it;
+              this is the part that counts down in between. */}
+          <span className="text-[0.65rem] tabular-nums text-muted-foreground">
+            {formatCountdown(live.eta, now)}
+          </span>
+        </div>
         <span className="text-[0.65rem] tabular-nums text-muted-foreground">
           {Math.round(live.progress)}%
         </span>

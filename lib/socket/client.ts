@@ -64,8 +64,32 @@ export function getSocket(): AppSocket {
   return socket;
 }
 
+/**
+ * A teardown that has been scheduled but not yet performed. StrictMode (and
+ * Fast Refresh) mount, unmount and remount `RealtimeProvider` in a single
+ * flush, so a synchronous `disconnect()` in its cleanup closes a websocket
+ * that is still in `CONNECTING` — the browser reports that as "WebSocket is
+ * closed before the connection is established", and the remount then has to
+ * open a second one. Deferring by a task lets the remount cancel it, exactly
+ * as `pendingRelease` does for an in-flight subscribe ack in
+ * `subscriptions.ts`. A real unmount has nothing to cancel it, so the
+ * disconnect still happens.
+ */
+let pendingDisconnect: ReturnType<typeof setTimeout> | null = null;
+
+function cancelPendingDisconnect(): void {
+  if (pendingDisconnect === null) return;
+  clearTimeout(pendingDisconnect);
+  pendingDisconnect = null;
+}
+
 export function connectSocket(): void {
+  cancelPendingDisconnect();
+
   const instance = getSocket();
+  // `disconnected` stays true for as long as the handshake is in flight, so
+  // this can be reached while the socket is already opening — `connect()` is
+  // a no-op in that state and does not open a second transport.
   if (instance.disconnected) {
     useRealtimeStore.getState().setConnectionStatus("CONNECTING");
     instance.connect();
@@ -73,10 +97,17 @@ export function connectSocket(): void {
 }
 
 export function disconnectSocket(): void {
-  socket?.disconnect();
+  if (!socket || pendingDisconnect !== null) return;
+
+  pendingDisconnect = setTimeout(() => {
+    pendingDisconnect = null;
+    socket?.disconnect();
+  }, 0);
 }
 
 export function reconnectSocket(): void {
+  cancelPendingDisconnect();
+
   const instance = getSocket();
   instance.disconnect();
   useRealtimeStore.getState().setConnectionStatus("CONNECTING");

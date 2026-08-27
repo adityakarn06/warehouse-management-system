@@ -3,10 +3,10 @@ import { create } from "zustand";
 import type { Alert, AlertCreatedPayload } from "@/types";
 
 import {
-  hydrateAlerts,
   markAllAlertsRead,
   markAlertRead,
   prependAlert,
+  seedAlerts,
   type AlertState,
   type RealtimeAlert,
 } from "./alert-helpers";
@@ -36,7 +36,7 @@ export const useAlertStore = create<AlertStore>()((set) => ({
 
   seedFromSnapshot: (alerts) =>
     set((state) =>
-      state.hasSeeded ? state : { ...hydrateAlerts(alerts, Date.now()), hasSeeded: true },
+      state.hasSeeded ? state : { ...seedAlerts(state, alerts, Date.now()), hasSeeded: true },
     ),
 
   pushAlert: (payload) => set((state) => prependAlert(state, payload, Date.now())),

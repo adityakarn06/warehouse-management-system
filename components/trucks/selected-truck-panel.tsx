@@ -5,12 +5,14 @@ import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useLiveTruckFields } from "@/features/yard";
-import { formatDateTime } from "@/lib/format";
+import { useNow } from "@/hooks/use-now";
+import { formatCountdown, formatDateTime } from "@/lib/format";
 import { useAssignmentForTruck, useUIStore } from "@/stores";
 import type { YardTruck } from "@/types";
 
 export function SelectedTruckPanel({ truck }: { truck: YardTruck }) {
   const live = useLiveTruckFields(truck);
+  const now = useNow();
   const assignment = useAssignmentForTruck(truck.id);
   const selectTruck = useUIStore((s) => s.selectTruck);
 
@@ -62,6 +64,9 @@ export function SelectedTruckPanel({ truck }: { truck: YardTruck }) {
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">ETA</span>
           <span className="tabular-nums">{formatDateTime(live.eta)}</span>
+          <span className="text-[0.65rem] tabular-nums text-muted-foreground">
+            {formatCountdown(live.eta, now)}
+          </span>
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">Progress</span>

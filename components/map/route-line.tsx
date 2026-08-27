@@ -51,29 +51,35 @@ export function RouteLine({ routeId, isSelected }: { routeId: string; isSelected
 
     const feature = toLineString(geometry);
 
+    // Updating in place must still fall through to the cleanup below: an
+    // early `return` here would leave that run of the effect with no
+    // teardown, and a `geometry` identity change (a broad invalidation, a
+    // cache re-fill) would then strand the source and both layers on the map
+    // for good — the corridor of a truck that has left the fleet stays
+    // painted.
     const existing = map.getSource(sourceId) as GeoJSONSource | undefined;
+
     if (existing) {
       existing.setData(feature);
-      return;
+    } else {
+      map.addSource(sourceId, { type: "geojson", data: feature });
+
+      map.addLayer({
+        id: casingLayerId,
+        type: "line",
+        source: sourceId,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": CASING_COLOR, "line-width": 5, "line-opacity": 0.7 },
+      });
+
+      map.addLayer({
+        id: lineLayerId,
+        type: "line",
+        source: sourceId,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": IDLE_COLOR, "line-width": 2, "line-opacity": 0.75 },
+      });
     }
-
-    map.addSource(sourceId, { type: "geojson", data: feature });
-
-    map.addLayer({
-      id: casingLayerId,
-      type: "line",
-      source: sourceId,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": CASING_COLOR, "line-width": 5, "line-opacity": 0.7 },
-    });
-
-    map.addLayer({
-      id: lineLayerId,
-      type: "line",
-      source: sourceId,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": IDLE_COLOR, "line-width": 2, "line-opacity": 0.75 },
-    });
 
     return () => {
       // Removal can race `map.remove()` during unmount, so every step is guarded.

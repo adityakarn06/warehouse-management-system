@@ -56,7 +56,7 @@ export function WarehouseMarker({ latitude, longitude, name, kind }: WarehouseMa
         height={350}
         className={cn(
           "object-contain drop-shadow-sm",
-          isDestination ? "h-[35px] w-[46px]" : "h-[23px] w-[30px] opacity-80",
+          isDestination ? "h-[46px] w-[60px]" : "h-[32px] w-[42px] opacity-80",
         )}
       />
       <span

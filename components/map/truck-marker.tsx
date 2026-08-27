@@ -6,15 +6,17 @@ import Image from "next/image";
 import mapboxgl from "mapbox-gl";
 
 import { truckStatusTone, type SemanticTone } from "@/components/ui/status-badge";
-import { useLiveTruckFields, useLiveTruckPosition } from "@/features/yard";
-import { formatTime } from "@/lib/format";
+import { useLiveTruckFields } from "@/features/yard";
+import { useNow } from "@/hooks/use-now";
+import { formatCountdown } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useUIStore } from "@/stores";
+import { useTruckStore, useUIStore } from "@/stores";
 import type { YardTruck } from "@/types";
 
+import { useMapInterpolator } from "./interpolator-context";
 import { useMapInstance } from "./map-context";
 
-/** The PNG cannot be recoloured, so status is carried by the dot and the ring. */
+/** The PNG cannot be recoloured, so status is carried by the dot. */
 const toneDotClass: Record<SemanticTone, string> = {
   neutral: "bg-muted-foreground",
   info: "bg-info",
@@ -23,18 +25,18 @@ const toneDotClass: Record<SemanticTone, string> = {
   critical: "bg-destructive",
 };
 
-const toneRingClass: Record<SemanticTone, string> = {
-  neutral: "ring-border",
-  info: "ring-info/60",
-  success: "ring-success/60",
-  warning: "ring-warning/70",
-  critical: "ring-destructive",
-};
 
 export function TruckMarker({ truck }: { truck: YardTruck }) {
   const map = useMapInstance();
-  const position = useLiveTruckPosition(truck);
+  const interpolator = useMapInterpolator();
   const live = useLiveTruckFields(truck);
+  // Whether the realtime layer holds this truck at all. A boolean, so this
+  // re-renders only when liveness flips — never on a position tick.
+  const isLiveTracked = useTruckStore((s) => truck.id in s.trucksById);
+  // Ticks the label once a second. It re-renders this component's *content*
+  // only — the marker instance, its DOM node and its position are untouched,
+  // since position comes from the interpolator's rAF loop and never a render.
+  const now = useNow();
   const selectedTruckId = useUIStore((s) => s.selectedTruckId);
   const isSelected = selectedTruckId === truck.id;
 
@@ -46,23 +48,35 @@ export function TruckMarker({ truck }: { truck: YardTruck }) {
     typeof document === "undefined" ? null : document.createElement("div"),
   );
 
+  // The REST snapshot's position, frozen at first render. Kept out of the
+  // effect's dependencies deliberately: a debounced overview refetch hands
+  // back a new `truck` object every time, and the marker must survive that —
+  // recreating the DOM node on a refetch is exactly what the interpolator
+  // exists to avoid. After the first live tick this value is irrelevant.
+  const [initialPosition] = useState<[number, number]>(() => [truck.longitude, truck.latitude]);
+
   useEffect(() => {
     if (!map || !container) return;
 
-    // Placed at the origin and immediately corrected by the position effect
-    // below, which runs later in the same commit — so there is no flash, and
-    // the live position stays out of this effect's dependencies.
     const marker = new mapboxgl.Marker({ element: container, anchor: "center" })
-      .setLngLat([0, 0])
+      .setLngLat(initialPosition)
       .addTo(map);
 
     markerRef.current = marker;
 
+    // The one and only position writer from here on. `setLngLat` is called
+    // from the interpolator's rAF loop — never from a render, never from an
+    // effect, and never with a coordinate this component computed.
+    const unregister = interpolator?.registerMarker(truck.id, (longitude, latitude) => {
+      marker.setLngLat([longitude, latitude]);
+    });
+
     return () => {
+      unregister?.();
       markerRef.current = null;
       marker.remove();
     };
-  }, [map, container]);
+  }, [map, container, interpolator, truck.id, initialPosition]);
 
   // Mapbox exposes no z-index API and stacks markers in DOM order, but the
   // element it positions is the one handed to it — so `z-index` on that
@@ -71,6 +85,17 @@ export function TruckMarker({ truck }: { truck: YardTruck }) {
   // and the newly deselected marker are re-appended in the same commit, in
   // `trucks` order, so the *deselected* one lands on top whenever it sorts
   // later.
+  // Position fallback for a truck the realtime layer has never delivered — a
+  // socket that never connected, or a truck absent from the operations
+  // snapshot. The interpolator owns position for every *live* truck, but it
+  // is fed exclusively from the truck store, so without this a non-live
+  // marker would sit wherever it was first painted while the debounced
+  // `/yard/overview` refetches moved on without it.
+  useEffect(() => {
+    if (isLiveTracked) return;
+    markerRef.current?.setLngLat([truck.longitude, truck.latitude]);
+  }, [map, container, isLiveTracked, truck.longitude, truck.latitude]);
+
   useEffect(() => {
     // Reached through the marker rather than the `container` binding itself:
     // that one comes from `useState`, and the compiler's immutability rule
@@ -79,16 +104,9 @@ export function TruckMarker({ truck }: { truck: YardTruck }) {
     if (element) element.style.zIndex = isSelected ? "1" : "";
   }, [map, container, isSelected]);
 
-  // A direct set, no easing and no RAF: this phase renders the backend's
-  // authoritative position only (AGENTS.md — animation comes later).
-  useEffect(() => {
-    markerRef.current?.setLngLat([position.longitude, position.latitude]);
-  }, [map, position.latitude, position.longitude]);
-
   if (!container) return null;
 
   const tone = truckStatusTone[live.status];
-  const isDelayed = live.activeDelay !== "NORMAL" || live.status === "DELAYED";
 
   return createPortal(
     <button
@@ -103,10 +121,8 @@ export function TruckMarker({ truck }: { truck: YardTruck }) {
     >
       <span
         className={cn(
-          "relative grid place-items-center rounded-md bg-background/80 p-0.5 shadow-sm ring-1 transition",
-          toneRingClass[tone],
-          isSelected && "bg-background ring-2 ring-primary",
-          !isSelected && isDelayed && "ring-2",
+          "relative grid place-items-center rounded-md bg-background/80 p-0.5 shadow-sm transition",
+          isSelected && "bg-background",
         )}
       >
         <Image
@@ -125,14 +141,8 @@ export function TruckMarker({ truck }: { truck: YardTruck }) {
         />
       </span>
 
-      <span
-        className={cn(
-          "rounded bg-background/90 px-1 py-px text-[0.6rem] font-medium leading-tight tabular-nums shadow-sm ring-1",
-          toneRingClass[tone],
-          isSelected && "ring-primary",
-        )}
-      >
-        {formatTime(live.eta)}
+      <span className="rounded bg-background/90 px-1 py-px text-[0.6rem] font-medium leading-tight tabular-nums shadow-sm">
+        {formatCountdown(live.eta, now, { compact: true })}
       </span>
     </button>,
     container,

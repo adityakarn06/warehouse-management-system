@@ -6,15 +6,20 @@ import {
   applyDockAssignment,
   applyDockStatus,
   replaceDockSnapshot,
+  seedAssignments,
   type DockState,
   type LiveAssignmentEntry,
   type LiveDockEntry,
+  type SnapshotAssignment,
 } from "./dock-helpers";
 
-export type { LiveAssignmentEntry, LiveDockEntry };
+export type { LiveAssignmentEntry, LiveDockEntry, SnapshotAssignment };
 
 interface DockActions {
   hydrateFromSnapshot: (docks: LiveDockEntry[]) => void;
+  /** Seeds `activeAssignments` from the same REST snapshot, so a truck
+   * assigned before the page loaded shows its dock. */
+  seedAssignmentsFromSnapshot: (assignments: SnapshotAssignment[], generatedAt: string) => void;
   applyStatusChange: (payload: DockStatusChangedPayload) => void;
   applyAssigned: (payload: DockAssignedPayload) => void;
   applyReassigned: (payload: DockReassignedPayload) => void;
@@ -28,6 +33,9 @@ export const useDockStore = create<DockStore>()((set) => ({
   assignmentsByTruckId: {},
 
   hydrateFromSnapshot: (docks) => set(() => ({ docksById: replaceDockSnapshot(docks) })),
+
+  seedAssignmentsFromSnapshot: (assignments, generatedAt) =>
+    set((state) => ({ assignmentsByTruckId: seedAssignments(state, assignments, generatedAt) })),
 
   applyStatusChange: (payload) => set((state) => applyDockStatus(state, payload)),
 

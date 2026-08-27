@@ -19,11 +19,15 @@ export interface LiveDockEntry {
 export interface LiveAssignmentEntry {
   assignmentId: string;
   truckId: string;
-  shipmentId: string;
+  /** `null` on a snapshot-seeded entry: `/yard/overview` carries a shipment
+   * *reference*, not an id, and this must not invent one. Live
+   * `DOCK_ASSIGNED`/`DOCK_REASSIGNED` payloads always carry the real id. */
+  shipmentId: string | null;
   dockDoorId: string;
   dockCode: string;
   status: string;
-  score: number;
+  /** `null` where the backend did not score the assignment. */
+  score: number | null;
   reasons: string[];
   serverTimestamp: string;
   /** Present only when this entry came from `DOCK_REASSIGNED` — the door the
@@ -32,6 +36,17 @@ export interface LiveAssignmentEntry {
   previousDockDoorId?: string;
   previousDockCode?: string;
   reason?: string;
+}
+
+/** The `/yard/overview` assignment row, as far as this reducer needs it. */
+export interface SnapshotAssignment {
+  id: string;
+  status: string;
+  truckId: string;
+  dockDoorId: string;
+  dockCode: string;
+  score?: number | null;
+  reasons?: string[];
 }
 
 export type DocksById = Record<string, LiveDockEntry>;
@@ -50,6 +65,48 @@ function isOlderThanStored(storedTimestamp: string | undefined, serverTimestamp:
 
 export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
   return Object.fromEntries(docks.map((dock) => [dock.dockId, dock]));
+}
+
+/**
+ * Seeds `assignmentsByTruckId` from the REST snapshot's `activeAssignments`.
+ *
+ * Without this the map is empty until a `DOCK_ASSIGNED` happens to arrive
+ * during the session, so every truck assigned *before* the page loaded shows
+ * no dock in the selected-truck panel. `generatedAt` becomes each entry's
+ * `serverTimestamp`, which is both the honest "as of" instant and what lets
+ * the ordering guard in `applyDockAssignment` keep a newer live event from
+ * being regressed by a later snapshot refetch.
+ */
+export function seedAssignments(
+  state: DockState,
+  assignments: SnapshotAssignment[],
+  generatedAt: string,
+): AssignmentsByTruckId {
+  const seeded: AssignmentsByTruckId = {};
+
+  for (const assignment of assignments) {
+    const existing = state.assignmentsByTruckId[assignment.truckId];
+    // A live event newer than this snapshot wins — the debounced refetch that
+    // produces it can land after the socket already moved the truck on.
+    if (existing && existing.serverTimestamp > generatedAt) {
+      seeded[assignment.truckId] = existing;
+      continue;
+    }
+
+    seeded[assignment.truckId] = {
+      assignmentId: assignment.id,
+      truckId: assignment.truckId,
+      shipmentId: null,
+      dockDoorId: assignment.dockDoorId,
+      dockCode: assignment.dockCode,
+      status: assignment.status,
+      score: assignment.score ?? null,
+      reasons: assignment.reasons ?? [],
+      serverTimestamp: generatedAt,
+    };
+  }
+
+  return seeded;
 }
 
 export function applyDockStatus(state: DockState, payload: DockStatusChangedPayload): DockState {
