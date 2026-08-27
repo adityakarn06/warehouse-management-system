@@ -93,6 +93,36 @@ export function AlertRowSkeleton({ className }: { className?: string }) {
   );
 }
 
+/** Matches `FleetTruckCard`'s geometry — photo band, headline, inset meta
+ * panel, progress bar — so the loading→loaded swap does not reflow the grid. */
+export function FleetCardSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex flex-col overflow-hidden rounded-lg border border-border bg-muted p-0", className)}>
+      <div className="px-4 pt-4">
+        <Skeleton className="h-4 w-16 rounded-full" />
+      </div>
+      <div className="flex items-end gap-2 px-4 pt-3">
+        <div className="flex shrink-0 flex-col gap-1.5 pr-6 pb-1">
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-2.5 w-24" />
+        </div>
+        <Skeleton className="h-36 min-w-0 flex-1" />
+      </div>
+      <div className="flex flex-col gap-2 rounded-lg bg-card p-3 m-4 mt-3">
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton className="h-2.5 w-2/5" />
+          <Skeleton className="h-2.5 w-1/4" />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton className="h-2.5 w-1/4" />
+          <Skeleton className="h-2.5 w-8" />
+        </div>
+        <Skeleton className="h-2 w-full rounded-full" />
+      </div>
+    </div>
+  );
+}
+
 export function TableSkeleton({ rows = 5, className }: { rows?: number; className?: string }) {
   return (
     <div className={cn("flex flex-col divide-y divide-border rounded-lg border border-border", className)}>

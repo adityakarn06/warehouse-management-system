@@ -40,6 +40,10 @@ export const queryKeys = {
     dockingQueue: ["yard", "docking-queue"] as const,
     allocationSummary: ["yard", "allocation-summary"] as const,
   },
+  fleet: {
+    all: ["fleet"] as const,
+    list: (filters?: QueryParams) => ["fleet", "list", filters ?? {}] as const,
+  },
   simulation: {
     status: ["simulation", "status"] as const,
     state: ["simulation", "state"] as const,

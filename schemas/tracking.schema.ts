@@ -82,5 +82,5 @@ const HYPHENATED_REFERENCE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+$/;
 export const trackingIdentifierInputSchema = z
   .string()
   .trim()
-  .min(1, { message: "Enter a tracking number, shipment reference or trailer ID." })
+  .min(1, { message: "Enter a tracking number, shipment reference, shipment ID or trailer ID." })
   .transform((value) => (HYPHENATED_REFERENCE_PATTERN.test(value) ? value.toUpperCase() : value));

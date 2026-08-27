@@ -32,4 +32,6 @@ export const API_ROUTES = {
   simulationTruckClearDelay: (truckId: string) => `/simulation/trucks/${truckId}/clear-delay`,
   wmsEvents: "/wms/events",
   wmsSimulate: "/wms/simulate",
+  // Proposed projection endpoint for the fleet card grid — see docs/fleet.md.
+  fleet: "/fleet",
 } as const;

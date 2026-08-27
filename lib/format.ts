@@ -1,3 +1,4 @@
+const weightFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -119,4 +120,11 @@ export function formatSecondsAgo(iso: string | null | undefined, now: number): s
   const hours = Math.floor(minutes / 60);
   const restMinutes = minutes % 60;
   return restMinutes === 0 ? `${hours}h ago` : `${hours}h ${restMinutes}m ago`;
+}
+
+/** `"6,500 kg"` for a shipment weight — em-dash for a truck with no shipment
+ * (`shipment: null`) rather than a misleading `"0 kg"`. */
+export function formatWeightKg(kg: number | null | undefined): string {
+  if (kg == null || !Number.isFinite(kg)) return "—";
+  return `${weightFormatter.format(kg)} kg`;
 }

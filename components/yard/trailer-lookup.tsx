@@ -45,6 +45,8 @@ export function TrailerLookup() {
     const query = value.trim();
     if (!query) return;
 
+    const seq = ++requestSeqRef.current;
+
     const local = findLocally(query);
     if (local) {
       // Always the canonical id — `selectedTruckId` is compared by identity
@@ -54,8 +56,6 @@ export function TrailerLookup() {
       setStatus("idle");
       return;
     }
-
-    const seq = ++requestSeqRef.current;
     setStatus("pending");
     try {
       const truck = await getTruck(query);

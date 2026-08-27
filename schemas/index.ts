@@ -11,3 +11,4 @@ export * from "./tracking.schema";
 export * from "./yard.schema";
 export * from "./simulation.schema";
 export * from "./wms.schema";
+export * from "./fleet.schema";

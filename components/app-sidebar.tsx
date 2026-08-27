@@ -23,6 +23,7 @@ import {
 
 const navMain: NavMainItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
+  { title: "Fleet", url: "/fleet", icon: TruckIcon },
   { title: "Track", url: "/track", icon: SearchIcon },
   { title: "Yard", url: "/yard", icon: WarehouseIcon },
   { title: "Alerts", url: "/alerts", icon: BellIcon },
