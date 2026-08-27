@@ -4,6 +4,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FIELD_LABEL_CLASS } from "@/components/ui/field-label";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { ShipmentStatus, TrackingResult, TruckStatus } from "@/types";
+import type { TrackingResolvedBy } from "@/schemas/tracking.schema";
+
+/** Copy for the arm `GET /tracking/:id` actually matched on, shown only when
+ * it was not the tracking number itself — the plain, common case needs no
+ * explanation. */
+const RESOLVED_BY_LABEL: Record<Exclude<TrackingResolvedBy, "TRACKING_NUMBER">, string> = {
+  SHIPMENT_REFERENCE: "shipment reference",
+  SHIPMENT_ID: "shipment id",
+  TRAILER_ID: "trailer ID",
+};
 
 /**
  * Identity and current standing. The shipment status is the REST row's — the
@@ -30,6 +40,11 @@ export function TrackingSummaryCard({
               {tracking.trackingNumber}
             </p>
             <p className="truncate text-sm text-muted-foreground">{tracking.customerName}</p>
+            {tracking.resolvedBy !== "TRACKING_NUMBER" ? (
+              <p className="truncate text-2xs text-muted-foreground">
+                Matched by {RESOLVED_BY_LABEL[tracking.resolvedBy]}
+              </p>
+            ) : null}
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <StatusBadge domain="shipment" value={shipmentStatus} showIcon />

@@ -16,6 +16,9 @@ function invalidateWmsAffected(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: queryKeys.dockAssignments.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.alerts.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.yard.overview });
+  queryClient.invalidateQueries({ queryKey: queryKeys.yard.dockingQueue });
+  queryClient.invalidateQueries({ queryKey: queryKeys.yard.allocationSummary });
+  queryClient.invalidateQueries({ queryKey: queryKeys.docks.schedule() });
   queryClient.invalidateQueries({ queryKey: queryKeys.simulation.state });
 }
 

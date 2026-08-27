@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { getDock, getDocks, type DockListFilters } from "@/lib/api/docks";
+import { getDock, getDocks, getDockSchedule, type DockListFilters, type DockScheduleFilters } from "@/lib/api/docks";
 import { getDockAssignments, type DockAssignmentListFilters } from "@/lib/api/assignments";
 import { queryKeys } from "@/lib/api/query-keys";
 
@@ -19,6 +19,17 @@ export function useDock(id: string | undefined) {
     queryKey: queryKeys.docks.detail(id ?? ""),
     queryFn: () => getDock(id as string),
     enabled: Boolean(id),
+    staleTime: Infinity,
+  });
+}
+
+/** The dock-door assignment schedule. Kept fresh by
+ * `features/yard/use-snapshot-invalidation.ts`, so `staleTime: Infinity` like
+ * every other backend-recomputed snapshot in this file. */
+export function useDockSchedule(filters: DockScheduleFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.docks.schedule(filters),
+    queryFn: () => getDockSchedule(filters),
     staleTime: Infinity,
   });
 }

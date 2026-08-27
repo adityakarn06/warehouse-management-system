@@ -6,13 +6,15 @@ import { SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { trackingNumberInputSchema } from "@/schemas/tracking.schema";
+import { trackingIdentifierInputSchema } from "@/schemas/tracking.schema";
 import { cn } from "@/lib/utils";
 
 /**
- * The lookup. Validation is client-side *shape* only — the schema normalises
- * casing and rejects an unparseable string, but whether a well-formed number
- * exists is the backend's answer (a 404), never a guess made here.
+ * The lookup. Validation is client-side *shape* only — the schema rejects an
+ * empty string and normalises casing for hyphenated references, but whether a
+ * well-formed identifier exists is the backend's answer (a 404), never a
+ * guess made here. The backend accepts a tracking number, shipment reference,
+ * shipment id or trailer id, tried in that order (`resolvedBy`).
  */
 export function TrackingSearchForm({
   className,
@@ -30,9 +32,9 @@ export function TrackingSearchForm({
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        const parsed = trackingNumberInputSchema.safeParse(value);
+        const parsed = trackingIdentifierInputSchema.safeParse(value);
         if (!parsed.success) {
-          setError(parsed.error.issues[0]?.message ?? "Enter a valid tracking number.");
+          setError(parsed.error.issues[0]?.message ?? "Enter a tracking number, shipment reference or trailer ID.");
           return;
         }
         setError(null);
@@ -48,16 +50,15 @@ export function TrackingSearchForm({
             setValue(event.target.value);
             if (error) setError(null);
           }}
-          placeholder="E2-TRACK-101"
-          aria-label="Tracking number"
+          placeholder="E2-TRACK-101, SHP-1001 or TRL-101"
+          aria-label="Tracking number, shipment reference or trailer ID"
           aria-invalid={error !== null}
           aria-describedby={error ? "tracking-number-error" : undefined}
           autoComplete="off"
-          autoCapitalize="characters"
           spellCheck={false}
           inputMode="text"
           enterKeyHint="search"
-          className="font-mono uppercase"
+          className="font-mono"
         />
         <Button type="submit" size="icon" aria-label="Track shipment">
           <SearchIcon />
@@ -70,7 +71,7 @@ export function TrackingSearchForm({
         </p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Enter the tracking number from the shipment confirmation.
+          Enter a tracking number, shipment reference or trailer ID.
         </p>
       )}
     </form>

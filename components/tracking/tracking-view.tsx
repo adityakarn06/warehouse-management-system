@@ -38,7 +38,15 @@ export function TrackingView({ trackingNumber }: { trackingNumber: string }) {
   // Joins `shipment:{id}` and reports what the backend resolved the tracking
   // number into. This ack is the only source of the truck id — the REST row
   // has none (its `trailerId` is a trailer, not a truck).
-  const resolution = useShipmentTracking(trackingNumber);
+  //
+  // Subscribed with the REST result's *canonical* `trackingNumber`, not the
+  // raw URL param: `subscribe:shipment` resolves a tracking number or a
+  // shipment reference, but not a trailer id (verified against the live
+  // server — `{shipmentId:"TRL-101"}` acks `ok:false`). A user who typed
+  // `TRL-101` would otherwise get a REST snapshot with a permanently dead
+  // map. This also collapses four possible identifiers for one shipment into
+  // a single subscription key.
+  const resolution = useShipmentTracking(query.data?.trackingNumber ?? null);
   const truckId = resolution?.truckId ?? null;
 
   const live = useTruck(truckId);
@@ -64,7 +72,7 @@ export function TrackingView({ trackingNumber }: { trackingNumber: string }) {
           <EmptyState
             icon={PackageSearchIcon}
             title="No shipment found"
-            description={`We couldn't find a shipment for ${trackingNumber}. Check the number and try again.`}
+            description={`We couldn't find a shipment matching "${trackingNumber}". Check the tracking number, shipment reference or trailer ID and try again.`}
             className="w-full"
           />
         ) : (

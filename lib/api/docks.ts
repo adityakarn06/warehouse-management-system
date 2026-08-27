@@ -2,6 +2,7 @@ import {
   dockDetailSchema,
   dockListItemSchema,
   dockReleaseResultSchema,
+  dockScheduleSchema,
   dockStatusUpdateResultSchema,
 } from "@/schemas/dock.schema";
 import type { DockStatus, LoadType } from "@/schemas/common.schema";
@@ -23,6 +24,19 @@ export function getDocks(filters: DockListFilters = {}) {
 
 export function getDock(id: string) {
   return apiGet(API_ROUTES.dockById(id), dockDetailSchema);
+}
+
+export interface DockScheduleFilters extends QueryParams {
+  from?: string;
+  to?: string;
+  includeRecommended?: boolean;
+}
+
+/** The dock-door assignment schedule (problem statement §7 output). Default
+ * `from` is now, default `to` is `now + ARRIVAL_HORIZON_MINUTES` — both
+ * decided by the backend, never guessed at here. */
+export function getDockSchedule(filters: DockScheduleFilters = {}) {
+  return apiGet(API_ROUTES.dockSchedule, dockScheduleSchema, { query: filters });
 }
 
 export interface UpdateDockStatusBody {

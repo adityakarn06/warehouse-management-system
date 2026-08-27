@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useUpdateDockStatus } from "@/features/docks";
+import { useReleaseDock, useUpdateDockStatus } from "@/features/docks";
 import { dockCommandError } from "@/features/docks/errors";
 import { notify } from "@/lib/toast";
 import type { DockStatus } from "@/types";
@@ -52,6 +52,7 @@ export function DockStatusAction({
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState(DEFAULT_REASON);
   const mutation = useUpdateDockStatus();
+  const release = useReleaseDock();
 
   const failure = mutation.error
     ? dockCommandError(mutation.error, `Could not update ${code}.`)
@@ -85,6 +86,18 @@ export function DockStatusAction({
       mutation.reset();
       setReason(DEFAULT_REASON);
     }
+  }
+
+  function handleRelease() {
+    release.mutate(dockId, {
+      onSuccess: (result) =>
+        notify.success(
+          result.releasedAssignmentIds.length > 0
+            ? `${result.dockCode} released — now ${result.status}`
+            : `${result.dockCode} held no committed booking`,
+        ),
+      onError: (error) => notify.error(dockCommandError(error, `Could not release ${code}.`).message),
+    });
   }
 
   function handleMakeAvailable() {
@@ -152,9 +165,29 @@ export function DockStatusAction({
       </Button>
     );
 
+  // Hands a door back to the yard — a distinct command from the
+  // AVAILABLE/UNAVAILABLE toggle above (§8's release, not §7's status flip),
+  // shown only when a booking actually holds the door. Releasing does not
+  // repair an out-of-service door: the response's *resulting* status is
+  // rendered verbatim, and a door that was UNAVAILABLE stays UNAVAILABLE.
+  const releaseButton = hasAssignment ? (
+    <Button
+      size={size}
+      variant="outline"
+      disabled={release.isPending}
+      className={className}
+      onClick={handleRelease}
+    >
+      {release.isPending ? "Releasing…" : "Release door"}
+    </Button>
+  ) : null;
+
   return (
     <>
-      {action}
+      <div className="flex flex-col gap-1.5">
+        {action}
+        {releaseButton}
+      </div>
 
       {/*
         Rendered independently of `status`. A successful takedown applies the

@@ -4,6 +4,9 @@ export type {
   DockStatusUpdateResult,
   DockReleaseResult,
   Reassignment,
+  DockScheduleAssignment,
+  DockScheduleDoor,
+  DockSchedule,
 } from "@/schemas/dock.schema";
 export type { DockStatus, DockAssignmentStatus } from "@/schemas/common.schema";
 export type { DockAssignmentListItem } from "@/schemas/assignment.schema";

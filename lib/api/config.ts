@@ -9,6 +9,9 @@ export const API_ROUTES = {
   truckById: (id: string) => `/trucks/${id}`,
   routeById: (id: string) => `/routes/${id}`,
   docks: "/docks",
+  // Registered ahead of `/docks/:id` on the backend so `schedule` is never
+  // matched as a dock id — kept as its own constant for the same reason.
+  dockSchedule: "/docks/schedule",
   dockById: (id: string) => `/docks/${id}`,
   dockStatus: (id: string) => `/docks/${id}/status`,
   dockRelease: (id: string) => `/docks/${id}/release`,
@@ -17,6 +20,8 @@ export const API_ROUTES = {
   dockAssignments: "/dock-assignments",
   alerts: "/alerts",
   yardOverview: "/yard/overview",
+  yardDockingQueue: "/yard/docking-queue",
+  yardAllocationSummary: "/yard/allocation-summary",
   simulationStart: "/simulation/start",
   simulationStop: "/simulation/stop",
   simulationReset: "/simulation/reset",

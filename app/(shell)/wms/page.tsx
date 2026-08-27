@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RadioIcon } from "lucide-react";
 
 import { PageShell } from "@/components/layout/page-shell";
+import { WmsEventComposer } from "@/components/wms/wms-event-composer";
 import { WmsLiveState } from "@/components/wms/wms-live-state";
 import { WmsScenarioCard, type WmsScenarioMeta } from "@/components/wms/wms-scenario-card";
 import { WmsStepList } from "@/components/wms/wms-step-list";
@@ -98,6 +99,8 @@ export default function WmsPage() {
           <p className="text-2xs text-destructive">{errorMessage}</p>
         </div>
       ) : null}
+
+      <WmsEventComposer />
 
       <div className="grid gap-2 lg:grid-cols-3">
         {SCENARIOS.map((meta) => (

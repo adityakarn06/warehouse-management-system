@@ -29,7 +29,9 @@ function TruckRow({ truck }: { truck: TruckListItem }) {
       )}
     >
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-xs font-medium">{truck.reference}</span>
+        <span className="truncate text-xs font-medium">
+          {truck.reference} <span className="font-mono text-muted-foreground">{truck.trailerId}</span>
+        </span>
         <span className="flex items-center gap-1 truncate text-2xs text-muted-foreground">
           {assignment ? `Dock ${assignment.dockCode}` : "No dock assigned"}
           {/* Which dock is only half the fact — whether it is a proposal or a

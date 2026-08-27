@@ -5,21 +5,38 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/api/query-keys";
 import { useDockStore, useTruckStore } from "@/stores";
-import type { AssignmentsByTruckId, TrucksById } from "@/stores";
+import type { AssignmentsByTruckId, DocksById, TrucksById } from "@/stores";
 import type { YardOverview } from "@/types";
 
 const MEMBERSHIP_INVALIDATING_STATUSES = new Set(["ARRIVED", "DOCKED", "COMPLETED"]);
 const DEBOUNCE_MS = 5_000;
 
+/** The four query keys a truck-terminal-transition, an assignment change or a
+ * dock status change all invalidate together — one dock board, four
+ * differently-shaped renderings of the same underlying facts (`docs/api.md`'s
+ * schedule, docking-queue and allocation-summary endpoints). */
+const SNAPSHOT_KEYS = [
+  queryKeys.yard.overview,
+  queryKeys.yard.dockingQueue,
+  queryKeys.yard.allocationSummary,
+  queryKeys.docks.schedule(),
+] as const;
+
 /**
- * The one place the dashboard refetches `/yard/overview` off the back of a
- * realtime event — and only for events after which a *backend-computed list*
- * (upcomingArrivals membership/order, docks[].currentAssignment,
- * activeAssignments) is definitionally stale: a truck entering a terminal
- * status, or a dock assignment/reassignment. Everything else (position, ETA,
- * progress, delay, dock status) is a pure field overlay and never triggers
- * this. Debounced so a burst of qualifying events (e.g. several trucks
- * arriving back-to-back) collapses into one refetch.
+ * The one place the dashboard refetches its backend-computed snapshots off
+ * the back of a realtime event — and only for events after which one of them
+ * is definitionally stale: a truck entering a terminal status, a dock
+ * assignment/reassignment, or a dock status change (a door going
+ * `UNAVAILABLE` changes the schedule and the allocation totals even when no
+ * assignment moved). Everything else (position, ETA, progress, delay) is a
+ * pure field overlay and never triggers this. Debounced so a burst of
+ * qualifying events (e.g. several trucks arriving back-to-back) collapses
+ * into one refetch each.
+ *
+ * `docks.schedule()` is invalidated only for its default (no-filter) key —
+ * a caller viewing a non-default `from`/`to`/`includeRecommended` window
+ * relies on its own explicit refresh, exactly as `docs/flows` documents for
+ * on-demand data.
  */
 export function useSnapshotInvalidation(): void {
   const queryClient = useQueryClient();
@@ -31,7 +48,9 @@ export function useSnapshotInvalidation(): void {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        queryClient.invalidateQueries({ queryKey: queryKeys.yard.overview });
+        for (const key of SNAPSHOT_KEYS) {
+          queryClient.invalidateQueries({ queryKey: key });
+        }
       }, DEBOUNCE_MS);
     };
 
@@ -90,7 +109,7 @@ export function useSnapshotInvalidation(): void {
     };
 
     let previousAssignments: AssignmentsByTruckId = useDockStore.getState().assignmentsByTruckId;
-    const unsubDocks = useDockStore.subscribe((state) => {
+    const unsubAssignments = useDockStore.subscribe((state) => {
       const nextAssignments = state.assignmentsByTruckId;
       if (nextAssignments !== previousAssignments && assignmentsChanged(previousAssignments, nextAssignments)) {
         scheduleInvalidate();
@@ -98,10 +117,33 @@ export function useSnapshotInvalidation(): void {
       previousAssignments = nextAssignments;
     });
 
+    // A door's status moving (e.g. AVAILABLE -> UNAVAILABLE, or a cascade's
+    // RESERVED -> AVAILABLE on release) changes the schedule board and the
+    // allocation totals even when `assignmentsByTruckId` does not change at
+    // all — the door disappearing from "available" is itself the stale fact.
+    // First sighting is excluded for the same reason as the truck watcher: at
+    // mount the store is empty, so "no previous entry" is not a transition.
+    let previousDocks: DocksById = useDockStore.getState().docksById;
+    const unsubDockStatus = useDockStore.subscribe((state) => {
+      const nextDocks = state.docksById;
+      if (nextDocks !== previousDocks) {
+        for (const dockId in nextDocks) {
+          const prev = previousDocks[dockId];
+          if (!prev) continue;
+          if (prev.status !== nextDocks[dockId].status) {
+            scheduleInvalidate();
+            break;
+          }
+        }
+      }
+      previousDocks = nextDocks;
+    });
+
     return () => {
       if (timer) clearTimeout(timer);
       unsubTrucks();
-      unsubDocks();
+      unsubAssignments();
+      unsubDockStatus();
     };
   }, [queryClient]);
 }

@@ -1,1 +1,1 @@
-export type { TrackingResult } from "@/schemas/tracking.schema";
+export type { TrackingResult, TrackingResolvedBy } from "@/schemas/tracking.schema";

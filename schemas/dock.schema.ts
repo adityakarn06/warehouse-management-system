@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { dockStatusSchema, loadTypeSchema } from "./common.schema";
+import { dockAssignmentStatusSchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema } from "./common.schema";
 import { alertSummarySchema, dockAlertSummarySchema } from "./alert.schema";
 
 const dockAssignmentTruckSchema = z.object({
@@ -114,6 +114,54 @@ export const dockReleaseResultSchema = z.object({
   status: dockStatusSchema,
   releasedAssignmentIds: z.array(z.string()),
 });
+
+/**
+ * `GET /docks/schedule` — a forward-looking timeline per door, distinct from
+ * `GET /docks/:id`'s recency-ordered history for one door. `status` here is
+ * `RECOMMENDED` or `ASSIGNED` (never `REASSIGNED`/`COMPLETED`/`CANCELLED`,
+ * which do not belong on a forward schedule), reused as the same string union
+ * `dockAssignmentStatusSchema` models elsewhere.
+ *
+ * `scheduledStart`/`scheduledEnd` are nullish: the backend always includes an
+ * assignment with no window regardless of the `from`/`to` bound, on the
+ * reasoning that "no window does not mean no booking" — the frontend must not
+ * drop these rows just because they cannot be placed on a time axis.
+ */
+const dockScheduleAssignmentSchema = z.object({
+  id: z.string(),
+  status: dockAssignmentStatusSchema,
+  truckId: z.string(),
+  truckReference: z.string(),
+  trailerId: z.string(),
+  shipmentReference: z.string(),
+  priority: shipmentPrioritySchema,
+  loadType: loadTypeSchema,
+  score: z.number().nullish(),
+  reasons: z.array(z.string()).optional(),
+  scheduledStart: z.string().nullish(),
+  scheduledEnd: z.string().nullish(),
+});
+
+const dockScheduleDoorSchema = z.object({
+  dockId: z.string(),
+  dockCode: z.string(),
+  dockName: z.string(),
+  zone: z.string(),
+  status: dockStatusSchema,
+  assignments: z.array(dockScheduleAssignmentSchema),
+});
+
+export const dockScheduleSchema = z.object({
+  generatedAt: z.string(),
+  from: z.string(),
+  to: z.string(),
+  includeRecommended: z.boolean(),
+  docks: z.array(dockScheduleDoorSchema),
+});
+
+export type DockScheduleAssignment = z.infer<typeof dockScheduleAssignmentSchema>;
+export type DockScheduleDoor = z.infer<typeof dockScheduleDoorSchema>;
+export type DockSchedule = z.infer<typeof dockScheduleSchema>;
 
 export type DockListItem = z.infer<typeof dockListItemSchema>;
 export type DockDetail = z.infer<typeof dockDetailSchema>;

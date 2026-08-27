@@ -3,15 +3,13 @@
 import { CheckIcon, XIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { WmsResultDetails } from "@/components/wms/wms-result-details";
 import { cn } from "@/lib/utils";
 import type { WmsSimulateResult } from "@/types";
 
 type WmsSimulateStep = WmsSimulateResult["steps"][number];
 
 function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
-  const result = step.result ?? null;
-
   return (
     <li
       className={cn(
@@ -38,60 +36,7 @@ function StepRow({ step, index }: { step: WmsSimulateStep; index: number }) {
         </p>
       ) : null}
 
-      {result ? (
-        <>
-          <div className="flex flex-wrap items-center gap-1">
-            {/* `applied: false` is a success, not a failure: the fact the feed
-                reported was already true, so nothing moved and no second alert
-                was raised (docs/api.md §WMS). */}
-            <Badge variant={result.applied ? "secondary" : "outline"}>
-              {result.applied ? "applied" : "already true"}
-            </Badge>
-            {result.truckId ? <Badge variant="outline">{result.truckId}</Badge> : null}
-            {result.dockDoorId ? <Badge variant="outline">{result.dockDoorId}</Badge> : null}
-          </div>
-
-          {result.effects.length > 0 ? (
-            <ul className="flex flex-col gap-0.5">
-              {result.effects.map((effect, effectIndex) => (
-                <li
-                  key={`${effect}-${effectIndex}`}
-                  className="font-mono text-2xs text-muted-foreground"
-                >
-                  {effect}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-2xs text-muted-foreground">Emitted</span>
-            {result.emitted.length > 0 ? (
-              result.emitted.map((event, eventIndex) => (
-                <Badge key={`${event}-${eventIndex}`} variant="info">
-                  {event}
-                </Badge>
-              ))
-            ) : (
-              // APPOINTMENT_UPDATED deliberately emits nothing (docs/realtime.md
-              // §Phase 9) — an empty list is the contract, not a missed event.
-              <span className="text-2xs text-muted-foreground">
-                nothing — this event raises no realtime event by contract
-              </span>
-            )}
-          </div>
-
-          {result.alert ? (
-            <div className="flex flex-col gap-1 rounded-sm bg-muted/40 px-2 py-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-2xs font-medium">{result.alert.title}</span>
-                <StatusBadge domain="alertSeverity" value={result.alert.severity} />
-              </div>
-              <p className="text-2xs text-muted-foreground">{result.alert.message}</p>
-            </div>
-          ) : null}
-        </>
-      ) : null}
+      {step.result ? <WmsResultDetails result={step.result} /> : null}
     </li>
   );
 }

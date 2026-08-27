@@ -32,10 +32,22 @@ const trackingAssignedDockSchema = z.object({
   scheduledEnd: z.string().nullish(),
 });
 
+/** Which of the four lookup arms `GET /tracking/:id` matched on, in the order
+ * it tries them. */
+export const trackingResolvedBySchema = z.enum([
+  "TRACKING_NUMBER",
+  "SHIPMENT_REFERENCE",
+  "SHIPMENT_ID",
+  "TRAILER_ID",
+]);
+
+export type TrackingResolvedBy = z.infer<typeof trackingResolvedBySchema>;
+
 export const trackingResultSchema = z.object({
   reference: z.string(),
   trackingNumber: z.string(),
   trailerId: z.string(),
+  resolvedBy: trackingResolvedBySchema,
   customerName: z.string(),
   status: shipmentStatusSchema,
   truckStatus: truckStatusSchema,
@@ -54,19 +66,21 @@ export const trackingResultSchema = z.object({
 export type TrackingResult = z.infer<typeof trackingResultSchema>;
 
 /**
- * What a customer may type into the lookup. `GET /api/v1/tracking/:trackingNumber`
- * takes the tracking number specifically — not the shipment reference or id
- * that `subscribe:shipment` also accepts — so this is deliberately narrow, and
- * a well-formed miss is left to the backend's 404 rather than guessed at here.
+ * What a customer may type into the lookup. `GET /api/v1/tracking/:id` tries
+ * four identifiers in order — tracking number, shipment reference, shipment
+ * id, trailer id — and reports which one matched via `resolvedBy`, so this
+ * schema only enforces "non-empty"; which well-formed string actually exists
+ * is entirely the backend's answer (a 404 otherwise), never guessed at here.
+ *
+ * A human reference (`E2-TRACK-101`, `SHP-1001`, `TRL-101`) is hyphenated and
+ * conventionally upper-case, so casing is normalised for that shape only. A
+ * runtime shipment id is a lower/mixed-case `cuid()` with no hyphen —
+ * uppercasing it would corrupt the id, so it is passed through untouched.
  */
-export const TRACKING_NUMBER_PATTERN = /^E2-TRACK-\d+$/;
+const HYPHENATED_REFERENCE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+$/;
 
-export const trackingNumberInputSchema = z
+export const trackingIdentifierInputSchema = z
   .string()
   .trim()
-  // zod v4 has no `.toUpperCase()` string method; casing is normalised in a
-  // transform so `e2-track-101` reaches the API — and the URL — canonically.
-  .transform((value) => value.toUpperCase())
-  .refine((value) => TRACKING_NUMBER_PATTERN.test(value), {
-    message: "Enter a tracking number like E2-TRACK-101.",
-  });
+  .min(1, { message: "Enter a tracking number, shipment reference or trailer ID." })
+  .transform((value) => (HYPHENATED_REFERENCE_PATTERN.test(value) ? value.toUpperCase() : value));

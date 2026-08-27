@@ -5,4 +5,12 @@ export type {
   YardAlert,
   YardSummary,
   YardOverview,
+  DockingQueueTopRecommendation,
+  DockingQueueEntry,
+  DockingQueueWindow,
+  DockingQueue,
+  AllocationSummaryTotals,
+  AllocationEntry,
+  UnallocatedTruck,
+  AllocationSummary,
 } from "@/schemas/yard.schema";

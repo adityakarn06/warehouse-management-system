@@ -25,6 +25,7 @@ export const queryKeys = {
     all: ["docks"] as const,
     list: (filters?: QueryParams) => ["docks", "list", filters ?? {}] as const,
     detail: (id: string) => ["docks", "detail", id] as const,
+    schedule: (filters?: QueryParams) => ["docks", "schedule", filters ?? {}] as const,
   },
   dockAssignments: {
     all: ["dock-assignments"] as const,
@@ -36,6 +37,8 @@ export const queryKeys = {
   },
   yard: {
     overview: ["yard", "overview"] as const,
+    dockingQueue: ["yard", "docking-queue"] as const,
+    allocationSummary: ["yard", "allocation-summary"] as const,
   },
   simulation: {
     status: ["simulation", "status"] as const,

@@ -3,20 +3,35 @@
 import { RadioIcon } from "lucide-react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useNow } from "@/hooks/use-now";
+import { formatSecondsAgo } from "@/lib/format";
 import { useDock, useTruck } from "@/stores";
 import type { WmsSimulateResult } from "@/types";
 
 function TruckRow({ truckId }: { truckId: string }) {
   const live = useTruck(truckId);
+  const now = useNow();
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-1.5">
-      <span className="text-2xs font-medium">{live?.reference ?? truckId}</span>
+    <div className="flex flex-col gap-0.5 rounded-md border border-border px-3 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-2xs font-medium">{live?.reference ?? truckId}</span>
+        {live ? (
+          <StatusBadge domain="truck" value={live.status} />
+        ) : (
+          <span className="text-2xs text-muted-foreground">not held live</span>
+        )}
+      </div>
+      {/* What the store actually holds — a readout of the fields the socket
+          pushed, not a fabricated yard grid. Labelled a yard *position*
+          because it is the same lat/lng the map plots, just read here as a
+          number rather than a marker. */}
       {live ? (
-        <StatusBadge domain="truck" value={live.status} />
-      ) : (
-        <span className="text-2xs text-muted-foreground">not held live</span>
-      )}
+        <span className="font-mono text-2xs text-muted-foreground tabular-nums">
+          {live.currentLatitude.toFixed(5)}, {live.currentLongitude.toFixed(5)} · updated{" "}
+          {formatSecondsAgo(live.serverTimestamp, now)}
+        </span>
+      ) : null}
     </div>
   );
 }

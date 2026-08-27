@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { activeDelaySchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema, shipmentStatusSchema, truckStatusSchema } from "./common.schema";
+import { activeDelaySchema, dockAssignmentStatusSchema, dockStatusSchema, loadTypeSchema, shipmentPrioritySchema, shipmentStatusSchema, truckStatusSchema } from "./common.schema";
 import { alertSchema } from "./alert.schema";
 import { routeSummarySchema } from "./route.schema";
 
@@ -98,3 +98,105 @@ export type YardAssignment = z.infer<typeof yardAssignmentSchema>;
 export type YardAlert = z.infer<typeof yardAlertSchema>;
 export type YardSummary = z.infer<typeof yardSummarySchema>;
 export type YardOverview = z.infer<typeof yardOverviewSchema>;
+
+/**
+ * `GET /yard/docking-queue` — "identify the trailer that needs to be docked
+ * for each arrival window" (problem statement §4). Windows arrive pre-grouped
+ * and pre-sorted (window, then priority, then ETA); rendered in the order
+ * received, never re-sorted here.
+ *
+ * `windowStart`/`windowEnd` are both null for the `UNSCHEDULED` bucket.
+ * `topRecommendation` is null both when the scorer excludes every door and,
+ * defensively, when scoring that one truck failed — the payload does not
+ * distinguish the two, so neither cause may be claimed on the frontend.
+ */
+const dockingQueueTopRecommendationSchema = z.object({
+  dockId: z.string(),
+  dockCode: z.string(),
+  score: z.number(),
+  reasons: z.array(z.string()),
+});
+
+const dockingQueueEntrySchema = z.object({
+  truckId: z.string(),
+  truckReference: z.string(),
+  trailerId: z.string(),
+  status: truckStatusSchema,
+  eta: z.string().nullish(),
+  progress: z.number(),
+  shipmentReference: z.string(),
+  priority: shipmentPrioritySchema,
+  loadType: loadTypeSchema,
+  topRecommendation: dockingQueueTopRecommendationSchema.nullable(),
+});
+
+const dockingQueueWindowSchema = z.object({
+  windowStart: z.string().nullable(),
+  windowEnd: z.string().nullable(),
+  entries: z.array(dockingQueueEntrySchema),
+});
+
+export const dockingQueueSchema = z.object({
+  generatedAt: z.string(),
+  horizonMinutes: z.number(),
+  windows: z.array(dockingQueueWindowSchema),
+});
+
+export type DockingQueueTopRecommendation = z.infer<typeof dockingQueueTopRecommendationSchema>;
+export type DockingQueueEntry = z.infer<typeof dockingQueueEntrySchema>;
+export type DockingQueueWindow = z.infer<typeof dockingQueueWindowSchema>;
+export type DockingQueue = z.infer<typeof dockingQueueSchema>;
+
+/**
+ * `GET /yard/allocation-summary` — the trailer-to-door allocation summary
+ * (problem statement §7 output). Committed (`ASSIGNED`) assignments only,
+ * plus every active truck holding none. `chainedFrom` is set only when the
+ * truck arrived at its door through the §10 reassignment chain.
+ *
+ * `docksByStatus` is keyed by `DockStatus`; a status with no doors in it may
+ * be absent from the object entirely, so a reader must default a missing key
+ * to 0 rather than assume all four are present.
+ */
+const allocationSummaryTotalsSchema = z.object({
+  allocatedTrailers: z.number(),
+  unallocatedTrailers: z.number(),
+  docksByStatus: z.partialRecord(dockStatusSchema, z.number()),
+});
+
+const allocationEntrySchema = z.object({
+  assignmentId: z.string(),
+  status: dockAssignmentStatusSchema,
+  trailerId: z.string(),
+  truckId: z.string(),
+  truckReference: z.string(),
+  shipmentReference: z.string(),
+  priority: shipmentPrioritySchema,
+  loadType: loadTypeSchema,
+  dockId: z.string(),
+  dockCode: z.string(),
+  zone: z.string(),
+  scheduledStart: z.string().nullish(),
+  scheduledEnd: z.string().nullish(),
+  chainedFrom: z.string().nullable(),
+});
+
+const unallocatedTruckSchema = z.object({
+  truckId: z.string(),
+  truckReference: z.string(),
+  trailerId: z.string(),
+  status: truckStatusSchema,
+  shipmentReference: z.string(),
+  priority: shipmentPrioritySchema,
+});
+
+export const allocationSummarySchema = z.object({
+  generatedAt: z.string(),
+  totals: allocationSummaryTotalsSchema,
+  allocations: z.array(allocationEntrySchema),
+  unallocated: z.array(unallocatedTruckSchema),
+});
+
+export type AllocationSummaryTotals = z.infer<typeof allocationSummaryTotalsSchema>;
+export type AllocationEntry = z.infer<typeof allocationEntrySchema>;
+export type UnallocatedTruck = z.infer<typeof unallocatedTruckSchema>;
+export type AllocationSummary = z.infer<typeof allocationSummarySchema>;
