@@ -90,6 +90,28 @@ export function replaceDockSnapshot(docks: LiveDockEntry[]): DocksById {
 }
 
 /**
+ * Fills in doors the store has never seen, leaving every existing entry alone.
+ *
+ * Unlike `replaceDockSnapshot` this never discards live state, so a second
+ * board can seed from its own REST list without clobbering what the dashboard
+ * (or a socket event) already established. It exists because
+ * `DOCK_STATUS_CHANGED` creates an entry for an unknown door with
+ * `occupyingTruckId: null` — accurate about the status it carries, but silently
+ * read as "this door is empty" by anything that trusts the live entry over its
+ * REST row.
+ */
+export function mergeDockSnapshot(state: DockState, docks: LiveDockEntry[]): DocksById {
+  let docksById = state.docksById;
+
+  for (const dock of docks) {
+    if (dock.dockId in docksById) continue;
+    docksById = { ...docksById, [dock.dockId]: dock };
+  }
+
+  return docksById;
+}
+
+/**
  * Seeds `assignmentsByTruckId` from the REST snapshot's `activeAssignments`.
  *
  * Without this the map is empty until a `DOCK_ASSIGNED` happens to arrive
@@ -269,6 +291,13 @@ export function applyDockCommandStatus(state: DockState, dock: DockDetail): Dock
   const existing = state.docksById[dock.id];
   if (isOlderThanStored(existing?.updatedAt, dock.updatedAt)) return state;
 
+  // `assignments` is optional on the detail schema, so an absent array means
+  // "not reported" — distinct from "reported empty". Treating the two alike
+  // would free a door the backend never said was free: putting a booked door
+  // back into service returns it as RESERVED, and clearing the occupant there
+  // would show a reserved-but-empty door and drop the truck's dock from the
+  // selected-truck panel.
+  const reportsAssignments = dock.assignments !== undefined;
   const assigned = dock.assignments?.find((assignment) => assignment.status === "ASSIGNED") ?? null;
 
   const docksById: DocksById = {
@@ -277,8 +306,12 @@ export function applyDockCommandStatus(state: DockState, dock: DockDetail): Dock
       dockId: dock.id,
       code: dock.code,
       status: dock.status,
-      occupyingTruckId: assigned?.truck.id ?? null,
-      activeAssignmentId: assigned?.id ?? null,
+      occupyingTruckId: reportsAssignments
+        ? (assigned?.truck.id ?? null)
+        : (existing?.occupyingTruckId ?? null),
+      activeAssignmentId: reportsAssignments
+        ? (assigned?.id ?? null)
+        : (existing?.activeAssignmentId ?? null),
       unavailableReason: dock.status === "UNAVAILABLE" ? (dock.unavailableReason ?? null) : null,
       updatedAt: dock.updatedAt,
     },
@@ -289,6 +322,7 @@ export function applyDockCommandStatus(state: DockState, dock: DockDetail): Dock
   let assignmentsByTruckId = state.assignmentsByTruckId;
   const strandedTruckId = existing?.occupyingTruckId;
   if (
+    reportsAssignments &&
     !assigned &&
     strandedTruckId &&
     strandedTruckId in assignmentsByTruckId &&
@@ -316,7 +350,9 @@ export function applyDockCommandStatus(state: DockState, dock: DockDetail): Dock
 export function applyDockCommandAssignment(
   state: DockState,
   assignment: CommandAssignment,
-  dockCode: string,
+  /** Resolved by the caller from a row that carries a real code; `null` when no
+   * such row exists anywhere in the response or the store. */
+  dockCode: string | null,
   previousDockDoorId: string | null,
 ): DockState {
   const door = state.docksById[assignment.dockDoorId];
@@ -363,7 +399,11 @@ export function applyDockCommandAssignment(
         truckId: assignment.truckId,
         shipmentId: assignment.shipmentId,
         dockDoorId: assignment.dockDoorId,
-        dockCode,
+        // Keep whatever real code is already known before giving up. The final
+        // fallback to the id is unreachable in practice — the caller has
+        // already tried the ranking, the exclusions, the current assignment and
+        // this store — and exists only to keep the field total.
+        dockCode: dockCode ?? existingAssignment?.dockCode ?? door?.code ?? assignment.dockDoorId,
         status: assignment.status,
         score: assignment.score ?? null,
         reasons: assignment.reasons ?? [],

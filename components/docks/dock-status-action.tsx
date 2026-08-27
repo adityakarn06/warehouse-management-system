@@ -57,55 +57,6 @@ export function DockStatusAction({
     ? dockCommandError(mutation.error, `Could not update ${code}.`)
     : null;
 
-  if (status === "RESERVED" || status === "OCCUPIED") {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button size={size} variant="ghost" disabled className={className}>
-              No action
-            </Button>
-          }
-        />
-        <TooltipContent>
-          {status === "RESERVED" ? "Reserved" : "Occupied"} is owned by the backend — release or
-          reassign the booking instead.
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  // Putting a door back into service needs no confirmation: it is not
-  // destructive, and the backend decides the resulting status anyway (a door
-  // still holding a booking comes back RESERVED, not AVAILABLE).
-  if (status === "UNAVAILABLE") {
-    return (
-      <Button
-        size={size}
-        variant="outline"
-        disabled={mutation.isPending}
-        className={className}
-        onClick={() =>
-          mutation.mutate(
-            { id: dockId, body: { status: "AVAILABLE" } },
-            {
-              onSuccess: (result) =>
-                notify.success(
-                  result.changed
-                    ? `${code} is now ${result.dock.status}`
-                    : `${code} was already ${result.dock.status}`,
-                ),
-              onError: (error) =>
-                notify.error(dockCommandError(error, `Could not update ${code}.`).message),
-            },
-          )
-        }
-      >
-        {mutation.isPending ? "Working…" : "Make available"}
-      </Button>
-    );
-  }
-
   function handleConfirm() {
     const trimmed = reason.trim();
     mutation.mutate(
@@ -136,25 +87,82 @@ export function DockStatusAction({
     }
   }
 
-  return (
-    <>
+  function handleMakeAvailable() {
+    mutation.mutate(
+      { id: dockId, body: { status: "AVAILABLE" } },
+      {
+        onSuccess: (result) =>
+          notify.success(
+            result.changed
+              ? `${code} is now ${result.dock.status}`
+              : `${code} was already ${result.dock.status}`,
+          ),
+        onError: (error) =>
+          notify.error(dockCommandError(error, `Could not update ${code}.`).message),
+      },
+    );
+  }
+
+  // The action offered depends on the *current* status, which flips the moment
+  // a command succeeds. The dialog below must not be part of that decision.
+  const action =
+    status === "RESERVED" || status === "OCCUPIED" ? (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button size={size} variant="ghost" disabled className={className}>
+              No action
+            </Button>
+          }
+        />
+        <TooltipContent>
+          {status === "RESERVED" ? "Reserved" : "Occupied"} is owned by the backend — release or
+          reassign the booking instead.
+        </TooltipContent>
+      </Tooltip>
+    ) : status === "UNAVAILABLE" ? (
+      // Putting a door back into service needs no confirmation: it is not
+      // destructive, and the backend decides the resulting status anyway (a
+      // door still holding a booking comes back RESERVED, not AVAILABLE).
       <Button
         size={size}
-        variant="destructive"
+        variant="outline"
+        disabled={mutation.isPending}
         className={className}
-        onClick={() => setIsOpen(true)}
+        onClick={handleMakeAvailable}
       >
+        {mutation.isPending ? "Working…" : "Make available"}
+      </Button>
+    ) : (
+      <Button size={size} variant="destructive" className={className} onClick={() => setIsOpen(true)}>
         Make unavailable
       </Button>
+    );
 
+  return (
+    <>
+      {action}
+
+      {/*
+        Rendered independently of `status`. A successful takedown applies the
+        backend's dock row to the store synchronously, so `status` flips to
+        UNAVAILABLE in the same tick the command resolves — gating this on the
+        status would unmount the dialog before it could ever show the cascade,
+        discarding the report of which trucks were moved and which were left
+        with nowhere to go.
+      */}
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Take {code} out of service?</DialogTitle>
+            <DialogTitle>
+              {mutation.data ? `${code} taken out of service` : `Take ${code} out of service?`}
+            </DialogTitle>
             <DialogDescription>
-              {hasAssignment
-                ? "A truck is booked on this door. The backend will re-score every affected truck against the remaining doors and move it, or report that it has nowhere to go."
-                : "The door will stop accepting new assignments until it is put back into service."}
+              {mutation.data
+                ? "What the backend did in response:"
+                : hasAssignment
+                  ? "A truck is booked on this door. The backend will re-score every affected truck against the remaining doors and move it, or report that it has nowhere to go."
+                  : "The door will stop accepting new assignments until it is put back into service."}
             </DialogDescription>
           </DialogHeader>
 

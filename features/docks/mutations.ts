@@ -7,7 +7,9 @@ import { releaseDock, updateDockStatus, type UpdateDockStatusBody } from "@/lib/
 import { queryKeys } from "@/lib/api/query-keys";
 import { useAlertStore } from "@/stores/use-alert-store";
 import { useDockStore } from "@/stores/use-dock-store";
-import type { DockAssignmentResult, DockDetail } from "@/types";
+import type { DockDetail } from "@/types";
+
+import { resolveDockCode } from "./dock-code";
 
 /**
  * These three commands deliberately do **not** invalidate the dashboard.
@@ -62,17 +64,6 @@ export function useReleaseDock() {
   });
 }
 
-/** The dock code the backend committed, taken from the response's own rows —
- * never derived from the id, which is a different field. */
-function committedDockCode(result: DockAssignmentResult): string {
-  const { assignment } = result;
-  if (result.currentAssignment?.dockDoorId === assignment.dockDoorId) {
-    return result.currentAssignment.dockCode;
-  }
-  const ranked = result.recommendations.find((rec) => rec.dockId === assignment.dockDoorId);
-  return ranked?.dockCode ?? assignment.dockDoorId;
-}
-
 /** Omitting `dockId` commits the backend's top-ranked recommendation. */
 export function useAssignDock() {
   const queryClient = useQueryClient();
@@ -92,7 +83,7 @@ export function useAssignDock() {
         .getState()
         .applyAssignmentCommandResult(
           result.assignment,
-          committedDockCode(result),
+          resolveDockCode(result, result.assignment.dockDoorId),
           result.previousAssignment?.dockDoorId ?? null,
         );
     },

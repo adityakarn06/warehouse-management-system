@@ -12,6 +12,7 @@ import {
   applyDockCommandAssignment,
   applyDockCommandStatus,
   applyDockStatus,
+  mergeDockSnapshot,
   replaceDockSnapshot,
   seedAssignments,
   type CommandAssignment,
@@ -25,6 +26,9 @@ export type { CommandAssignment, LiveAssignmentEntry, LiveDockEntry, SnapshotAss
 
 interface DockActions {
   hydrateFromSnapshot: (docks: LiveDockEntry[]) => void;
+  /** Seeds only doors the store has never seen — for a second board that must
+   * not clobber live state the dashboard already established. */
+  mergeFromSnapshot: (docks: LiveDockEntry[]) => void;
   /** Seeds `activeAssignments` from the same REST snapshot, so a truck
    * assigned before the page loaded shows its dock. */
   seedAssignmentsFromSnapshot: (assignments: SnapshotAssignment[], generatedAt: string) => void;
@@ -38,7 +42,7 @@ interface DockActions {
   /** Applies the assignment row `POST /dock-assignment` returned. */
   applyAssignmentCommandResult: (
     assignment: CommandAssignment,
-    dockCode: string,
+    dockCode: string | null,
     previousDockDoorId: string | null,
   ) => void;
   clear: () => void;
@@ -51,6 +55,8 @@ export const useDockStore = create<DockStore>()((set) => ({
   assignmentsByTruckId: {},
 
   hydrateFromSnapshot: (docks) => set(() => ({ docksById: replaceDockSnapshot(docks) })),
+
+  mergeFromSnapshot: (docks) => set((state) => ({ docksById: mergeDockSnapshot(state, docks) })),
 
   seedAssignmentsFromSnapshot: (assignments, generatedAt) =>
     set((state) => ({ assignmentsByTruckId: seedAssignments(state, assignments, generatedAt) })),

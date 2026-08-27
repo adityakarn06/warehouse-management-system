@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { CardSkeleton } from "@/components/ui/loading-skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAssignDock } from "@/features/docks";
+import { resolveDockCode } from "@/features/docks/dock-code";
 import { dockCommandError } from "@/features/docks/errors";
 import { useDockRecommendations } from "@/features/trucks";
 import { formatTime } from "@/lib/format";
@@ -70,6 +71,11 @@ export function DockRecommendationPanel() {
   const data = query.data;
   const committed = isAssignmentResult(data) ? data : null;
   const currentDockId = data.currentAssignment?.dockDoorId ?? null;
+  const committedCode = committed ? resolveDockCode(committed, committed.assignment.dockDoorId) : null;
+  const previousCode =
+    committed?.previousAssignment
+      ? resolveDockCode(committed, committed.previousAssignment.dockDoorId)
+      : null;
 
   function handleAssign(dockId?: string) {
     if (!truckId) return;
@@ -77,9 +83,11 @@ export function DockRecommendationPanel() {
       { truckId, body: dockId ? { dockId } : undefined },
       {
         onSuccess: (result) => {
+          // The assignment row identifies its door by id only; show the code.
+          const code = resolveDockCode(result, result.assignment.dockDoorId);
           notify.success(
             result.created
-              ? `${result.truck.reference} assigned to ${result.assignment.dockDoorId}`
+              ? `${result.truck.reference} assigned to ${code ?? "its dock"}`
               : `${result.truck.reference} already held that dock`,
           );
         },
@@ -118,13 +126,11 @@ export function DockRecommendationPanel() {
       {committed ? (
         <div className="rounded-lg border border-success/30 bg-success/5 p-2.5 text-[0.65rem]">
           <p className="font-medium text-foreground">
-            {committed.created ? "Assignment created" : "Already assigned"} ·{" "}
-            {committed.assignment.dockDoorId}
+            {committed.created ? "Assignment created" : "Already assigned"}
+            {committedCode ? ` · ${committedCode}` : ""}
           </p>
-          {committed.previousAssignment ? (
-            <p className="text-muted-foreground">
-              Moved from {committed.previousAssignment.dockDoorId}
-            </p>
+          {previousCode ? (
+            <p className="text-muted-foreground">Moved from {previousCode}</p>
           ) : null}
         </div>
       ) : null}
