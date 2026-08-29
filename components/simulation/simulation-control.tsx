@@ -215,10 +215,11 @@ export function SimulationControl() {
           <AlertDialogHeader>
             <AlertDialogTitle>Rewind the live demo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Reset reloads the world from the database. Every truck jumps back to its seeded
-              position, and progress, ETAs and dock assignments rewind with it — for everyone
-              watching, not just this browser. The loop keeps its current running or stopped
-              state.
+              Reset rewinds the whole demo world to its seeded state — the same world
+              <span className="font-mono">pnpm db:seed</span> writes. Every truck jumps back to its
+              seeded position, including ones that have already arrived, and progress, ETAs, dock
+              assignments and alerts all rewind with it. This is for everyone watching, not just
+              this browser. The loop keeps its current running or stopped state.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -63,10 +63,12 @@ export function useStopSimulation() {
 }
 
 /**
- * Reloads the world from the database, keeping the loop's running/stopped state.
+ * Rewinds the whole demo world to its seeded state, keeping the loop's
+ * running/stopped state.
  *
- * Reset rewinds every truck to its seeded position, so *everything* the client
- * holds about the world describes a world that no longer exists. Recovery is
+ * Reset re-seeds — trucks, docks, assignments and alerts all go back to t0 — so
+ * *everything* the client holds about the world describes a world that no
+ * longer exists. Recovery is
  * deliberately a full re-hydration from the server rather than a patch:
  *
  * 1. The live stores are emptied — including entities the rewind may have

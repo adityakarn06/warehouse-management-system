@@ -12,7 +12,7 @@ export function stopSimulation() {
   return apiSend("POST", API_ROUTES.simulationStop, simulationLifecycleSchema);
 }
 
-/** Reloads the world from the database; keeps the loop's running/stopped state. */
+/** Rewinds the whole demo world to its seeded state; keeps the loop's running/stopped state. */
 export function resetSimulation() {
   return apiSend("POST", API_ROUTES.simulationReset, simulationLifecycleSchema);
 }

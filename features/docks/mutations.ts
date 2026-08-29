@@ -82,6 +82,10 @@ export function useReleaseDock() {
       // whose rows a release directly changes (a freed door, a completed
       // allocation).
       queryClient.invalidateQueries({ queryKey: queryKeys.docks.detail(result.dockDoorId) });
+      // And every truck detail: `GET /trucks/:id` carries `dockAssignments[]`,
+      // which a release just closed out. The response names only the door, not
+      // the trucks it freed, so there is no single detail key to target.
+      queryClient.invalidateQueries({ queryKey: queryKeys.trucks.all });
       invalidateSnapshots(queryClient);
     },
   });
@@ -109,6 +113,14 @@ export function useAssignDock() {
           resolveDockCode(result, result.assignment.dockDoorId),
           result.previousAssignment?.dockDoorId ?? null,
         );
+
+      // The truck detail is the fourth view nothing overlays. `GET /trucks/:id`
+      // returns `dockAssignments[]` newest-first, and a commit just wrote a row
+      // into it (and cancelled the one it superseded) — unlike the dock board,
+      // no live Zustand layer sits over that array, so `/truck-ops`'s activity
+      // timeline would keep rendering the pre-commit history until something
+      // else happened to evict the cache.
+      queryClient.invalidateQueries({ queryKey: queryKeys.trucks.detail(variables.truckId) });
       invalidateSnapshots(queryClient);
     },
   });

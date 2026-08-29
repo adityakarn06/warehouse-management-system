@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRightIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -66,6 +68,20 @@ export function FleetTruckCard({ truck }: { truck: FleetTruck }) {
               as "how far along", the status pill already carries DELAYED/etc. */}
           <ProgressBar value={truck.progress} label="Route progress" indicatorClassName="bg-success" />
         </div>
+
+        {/* The way through to this truck's operations screen. Linked by
+            `reference` rather than `id` — `GET /trucks/:id` resolves both, and
+            the readable one is what an operator would type. */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          nativeButton={false}
+          render={<Link href={`/truck-ops/${encodeURIComponent(truck.reference)}`} />}
+        >
+          Open operations
+          <ArrowRightIcon />
+        </Button>
       </div>
     </Card>
   );

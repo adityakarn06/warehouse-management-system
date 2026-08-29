@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   BellIcon,
+  ClipboardListIcon,
   LayoutDashboardIcon,
   RadioIcon,
   SearchIcon,
@@ -24,8 +25,12 @@ import {
 const navMain: NavMainItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
   { title: "Fleet", url: "/fleet", icon: TruckIcon },
+  { title: "Truck Ops", url: "/truck-ops", icon: ClipboardListIcon },
   { title: "Track", url: "/track", icon: SearchIcon },
   { title: "Yard", url: "/yard", icon: WarehouseIcon },
+  // Temporary: the reworked yard page, live alongside the old one until it
+  // replaces it.
+  { title: "New Yard", url: "/new-yard", icon: WarehouseIcon },
   { title: "Alerts", url: "/alerts", icon: BellIcon },
   { title: "WMS Feed", url: "/wms", icon: RadioIcon },
 ];

@@ -129,3 +129,30 @@ export const useHighestUnreadSeverity = () =>
  * `.find` hands back an existing reference, so this needs no `useShallow`. */
 export const useLatestAlertForTruck = (truckId: string | null) =>
   useAlertStore((s) => (truckId ? s.alerts.find((alert) => alert.truckId === truckId) : undefined));
+
+/**
+ * Every alert naming this door, in feed order (newest-first). Unlike
+ * `useNoDockAvailableAlerts` this is *not* restricted to live-pushed rows: a
+ * door's own history is exactly what an operator opening its detail is asking
+ * for, and it is bounded by the one door rather than the whole yard.
+ */
+export const useAlertsForDock = (dockId: string | null) =>
+  useAlertStore(
+    useShallow((s) =>
+      dockId ? s.alerts.filter((alert) => alert.dockDoorId === dockId) : [],
+    ),
+  );
+
+/**
+ * Every alert naming this truck, in feed order (newest-first). Same reasoning
+ * as `useAlertsForDock`: a single truck's own history is exactly what an
+ * operator opening its operations page is asking for, so snapshot rows are
+ * included rather than restricted to live pushes, and the whole thing is
+ * bounded by the one truck.
+ */
+export const useAlertsForTruck = (truckId: string | null) =>
+  useAlertStore(
+    useShallow((s) =>
+      truckId ? s.alerts.filter((alert) => alert.truckId === truckId) : [],
+    ),
+  );
